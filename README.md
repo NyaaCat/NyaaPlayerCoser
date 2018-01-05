@@ -1,0 +1,2 @@
+# NyaaPlayerCoser
+NyaaPlayerCoser (NPC) plugin.
