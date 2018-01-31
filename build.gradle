@@ -1,0 +1,58 @@
+plugins {
+    id 'java'
+}
+
+// Version strings used for CI
+// Note the spaces before and after the equals sign
+ext.majorVersion = 0
+ext.minorVersion = 1
+ext.minecraftVersion = "1.12"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    jcenter()
+
+    maven {
+        name 'Spigot'
+        url 'https://hub.spigotmc.org/nexus/content/groups/public/'
+    }
+
+    maven {
+        name 'Sonatype'
+        url 'https://oss.sonatype.org/content/groups/public'
+    }
+    
+    maven {
+        name 'NyaaCore'
+        url 'https://raw.githubusercontent.com/NyaaCat/NyaaCore/maven-repo'
+    }
+
+    maven {
+        name 'vault-repo'
+        url 'http://nexus.hc.to/content/repositories/pub_releases'
+    }
+
+    maven {
+        name 'nu-langchecker'
+        url 'https://raw.githubusercontent.com/Librazy/NyaaUtilsLangChecker/maven-repo'
+    }
+
+    maven {
+        name 'ess-repo'
+        url 'http://repo.ess3.net/content/groups/essentials'
+    }
+
+    maven {
+        name 'langutils-repo'
+        url 'https://raw.github.com/MascusJeoraly/LanguageUtils/mvn-repo/'
+    }
+}
+
+dependencies {
+    compile 'org.spigotmc:spigot-api:1.12.1-R0.1-SNAPSHOT'
+    compile('cat.nyaa:nyaacore:4.1-SNAPSHOT') {
+        transitive = false
+    }
+}
