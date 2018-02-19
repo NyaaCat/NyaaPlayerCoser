@@ -4,18 +4,17 @@ import cat.nyaa.npc.persistance.NpcData;
 import cat.nyaa.npc.persistance.TradeData;
 import cat.nyaa.nyaacore.CommandReceiver;
 import cat.nyaa.nyaacore.utils.RayTraceUtils;
-import org.bukkit.Chunk;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.Optional;
+import org.bukkit.util.Vector;
 
 public class CommandHandler extends CommandReceiver {
     private final NyaaPlayerCoser plugin;
@@ -30,19 +29,70 @@ public class CommandHandler extends CommandReceiver {
         return "";
     }
 
-    @SubCommand("debug")
-    public void debugCommand(CommandSender sender, Arguments args) {
-        Block b = getRayTraceBlock(sender);
-        b.setType(Material.WOOL);
+    @SubCommand(value = "reload", permission = "npc.admin.reload")
+    public void reloadCommand(CommandSender sender, Arguments args) {
+        plugin.onReload();
     }
 
-    @SubCommand("debug2")
-    public void debugCommand2(CommandSender sender, Arguments args) {
-        int x = args.nextInt();
-        int y = args.nextInt();
-        int z = args.nextInt();
-        boolean loaded = isChunkLoadedAtBlockCoordinate(asPlayer(sender).getWorld(), x, z);
-        sender.sendMessage("isLoaded = " + loaded);
+    @SubCommand(value = "spawn", permission = "npc.admin.spawn")
+    public void newNpcDefinition(CommandSender sender, Arguments args) {
+        EntityType type = args.nextEnum(EntityType.class);
+        if (!plugin.cfg.isAllowedType(type)) {
+            throw new BadCommandException("user.spawn.type_disallow", type.name());
+        }
+        String name = args.nextString();
+        Block b = getRayTraceBlock(sender);
+        if (b == null || b.getType() == Material.AIR) {
+            throw new BadCommandException("user.spawn.not_block");
+        }
+        if (b.getRelative(BlockFace.UP).getType().isSolid() || b.getRelative(0, 2, 0).getType().isSolid()) {
+            throw new BadCommandException("user.spawn.not_enough_space");
+        }
+        NpcData data = new NpcData(b.getLocation().clone().add(.5, 0, .5), name, type);
+        String npcId = plugin.entitiesManager.createNPC(data);
+        msg(sender, "user.spawn.id_created", npcId);
+    }
+
+    @SubCommand(value = "info", permission = "npc.admin.info")
+    public void inspectNpcInfo(CommandSender sender, Arguments args) {
+        String npcId = null;
+        if (args.top() != null) {
+            npcId = args.nextString();
+        } else {
+            // select cursor entity
+            Player p = asPlayer(sender);
+            double minAngle = Math.PI / 2D;
+            for (Entity e : p.getNearbyEntities(3, 3, 3)) {
+                if (!EntitiesManager.isNyaaNPC(e)) continue;
+                LivingEntity currentMobEntity = (LivingEntity) e;
+                Vector eyeSight = p.getEyeLocation().getDirection();
+                Vector mobVector = currentMobEntity.getEyeLocation().toVector().subtract(p.getEyeLocation().toVector());
+                double angle = getVectorAngle(eyeSight, mobVector);
+                if (!Double.isFinite(angle)) continue;
+                if (angle >= minAngle) continue;
+                minAngle = angle;
+                npcId = EntitiesManager.getNyaaNpcId(e);
+            }
+        }
+        if (npcId == null) {
+            throw new BadCommandException("user.info.no_selection");
+        }
+        NpcData data = plugin.cfg.npcData.npcList.get(npcId);
+        if (data == null) {
+            throw new BadCommandException("user.info.bad_id");
+        }
+        msg(sender, "user.info.msg_id", npcId);
+        msg(sender, "user.info.msg_name", data.displayName);
+        msg(sender, "user.info.msg_type", data.type.name());
+        msg(sender, "user.info.msg_loc",
+                String.format("[world=%s, x=%.2f, y=%.2f, z=%.2f]", data.worldName, data.x, data.y, data.z));
+        if (data.trades.size() > 0) {
+            for (String trade : data.trades) {
+                msg(sender, "user.info.msg_trade", trade);
+            }
+        } else {
+            msg(sender, "user.info.msg_no_trade");
+        }
     }
 
     @SubCommand("newtrade")
@@ -55,25 +105,13 @@ public class CommandHandler extends CommandReceiver {
         msg(sender, "user.new_trade.id_created", tradeId);
     }
 
-    @SubCommand("newnpc")
-    public void newNpc(CommandSender sender, Arguments args) {
-        Block b = getRayTraceBlock(sender);
-        if (b == null || b.getType() == Material.AIR) {
-            throw new BadCommandException("user.new_npc.not_block");
-        }
-        if (b.getRelative(BlockFace.UP).getType().isSolid() || b.getRelative(0,2,0).getType().isSolid()) {
-            throw new BadCommandException("user.new_npc.not_enough_space");
-        }
-        NpcData data = new NpcData(b.getLocation().clone().add(.5,0,.5), "Demo NPC", EntityType.VILLAGER);
-        String npcId = plugin.cfg.npcData.addNpc(data);
-        msg(sender, "user.new_npc.id_created", npcId);
-    }
+    // helper functions
 
     private Block getRayTraceBlock(CommandSender sender) {
         try {
             return RayTraceUtils.rayTraceBlock(asPlayer(sender));
         } catch (ReflectiveOperationException ex) {
-            throw (BadCommandException)(new BadCommandException().initCause(ex));
+            throw (BadCommandException) (new BadCommandException().initCause(ex));
         }
     }
 
@@ -91,5 +129,12 @@ public class CommandHandler extends CommandReceiver {
         } else {
             throw new BadCommandException("user.empty_slot", slot);
         }
+    }
+
+    private static double getVectorAngle(Vector v1, Vector v2) {
+        double dot = v1.dot(v2);
+        double normalProduct = v1.length() * v2.length();
+        double cos = dot / normalProduct;
+        return Math.acos(cos);
     }
 }

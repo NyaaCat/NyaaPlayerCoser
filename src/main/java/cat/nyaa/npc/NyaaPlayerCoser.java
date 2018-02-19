@@ -11,6 +11,7 @@ public class NyaaPlayerCoser extends JavaPlugin {
     public Configuration cfg;
     public CommandHandler cmd;
     public EntitiesManager entitiesManager;
+    public AIController ai;
 
     @Override
     public void onEnable() {
@@ -21,16 +22,28 @@ public class NyaaPlayerCoser extends JavaPlugin {
         cmd = new CommandHandler(this, i18n);
         getCommand(PLUGIN_COMMAND_NAME).setExecutor(cmd);
         getCommand(PLUGIN_COMMAND_NAME).setTabCompleter(cmd);
+        ai = new AIController(this);
         entitiesManager = new EntitiesManager(this);
     }
 
     @Override
     public void onDisable() {
-        entitiesManager.stopTickListener();
+        entitiesManager.destructor();
+        ai.destructor();
         getServer().getScheduler().cancelTasks(this);
         getCommand(PLUGIN_COMMAND_NAME).setExecutor(null);
         getCommand(PLUGIN_COMMAND_NAME).setTabCompleter(null);
         HandlerList.unregisterAll(this);
         cfg.save();
+    }
+
+    public void onReload() {
+        entitiesManager.destructor();
+        ai.destructor();
+        getServer().getScheduler().cancelTasks(this);
+        getCommand(PLUGIN_COMMAND_NAME).setExecutor(null);
+        getCommand(PLUGIN_COMMAND_NAME).setTabCompleter(null);
+        HandlerList.unregisterAll(this);
+        onEnable();
     }
 }

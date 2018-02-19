@@ -1,0 +1,31 @@
+user:
+  spawn:
+    type_disallow: NPC type %s is not allowed.
+    not_block: NPCs must be placed on blocks.
+    not_enough_space: There's not enough space for the NPC.
+    id_created: "New NPC ID is: %s"
+  info:
+    no_selection: You should provide an id or be near to an NPC.
+    bad_id: No NPC corresponds to this id.
+    msg_id: "NPC ID: %s"
+    msg_name: "NPC Name: %s"
+    msg_type: "NPC Type: %s"
+    msg_loc: "NPC Location: %s"
+    msg_trade: "NPC Trade: %s"
+    msg_no_trade: "NPC has no trade"
+
+
+
+manual:
+  help:
+    description: Show help message
+    usage: /npc [subCommands...] help
+  reload:
+    description: Reload plugin
+    usage: /npc reload
+  spawn:
+    description: Define new NPC, will be placed at cursor
+    usage: /npc spawn <NpcType> <NpcName>
+  info:
+    description: Show NPC info, by id or by cursor position
+    usage: /npc info [npcId]

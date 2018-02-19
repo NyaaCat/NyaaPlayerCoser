@@ -4,7 +4,8 @@ import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.nyaacore.configuration.FileConfigure;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class NpcDataConfig extends FileConfigure {
     @Override
@@ -18,6 +19,7 @@ public class NpcDataConfig extends FileConfigure {
     }
 
     private final NyaaPlayerCoser plugin;
+
     public NpcDataConfig(NyaaPlayerCoser plugin) {
         this.plugin = plugin;
     }
@@ -29,15 +31,31 @@ public class NpcDataConfig extends FileConfigure {
 
     /**
      * Add an new npc then save immediately.
+     * You may want to use {@link cat.nyaa.npc.EntitiesManager#createNPC(NpcData)}
+     *
      * @param data npc data
      * @return newly assigned npc id.
      */
     public String addNpc(NpcData data) {
         while (npcList.containsKey(Integer.toString(maxId))) {
-            maxId ++;
+            maxId++;
         }
         npcList.put(Integer.toString(maxId), data);
         save();
         return Integer.toString(maxId);
+    }
+
+    /**
+     * Return list of NPCs in the given chunk.
+     * TODO optimize
+     */
+    public Map<String, NpcData> getNpcInChunk(String world, int chunkX, int chunkZ) {
+        Map<String, NpcData> ret = new HashMap<>();
+        for (Map.Entry<String, NpcData> e : npcList.entrySet()) {
+            if (e.getValue().chunkX() == chunkX && e.getValue().chunkZ() == chunkZ && e.getValue().worldName.equalsIgnoreCase(world)) {
+                ret.put(e.getKey(), e.getValue());
+            }
+        }
+        return ret;
     }
 }

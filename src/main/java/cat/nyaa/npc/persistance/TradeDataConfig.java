@@ -7,7 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TradeDataConfig extends FileConfigure{
+public class TradeDataConfig extends FileConfigure {
     @Override
     protected String getFileName() {
         return "trades.yml";
@@ -19,6 +19,7 @@ public class TradeDataConfig extends FileConfigure{
     }
 
     private final NyaaPlayerCoser plugin;
+
     public TradeDataConfig(NyaaPlayerCoser plugin) {
         this.plugin = plugin;
     }
@@ -30,6 +31,7 @@ public class TradeDataConfig extends FileConfigure{
 
     /**
      * Add an new trade then save immediately.
+     *
      * @param data trade data
      * @return newly assigned trade id.
      */
