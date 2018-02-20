@@ -16,6 +16,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import java.util.Map;
+
 public class CommandHandler extends CommandReceiver {
     private final NyaaPlayerCoser plugin;
 
@@ -49,7 +51,7 @@ public class CommandHandler extends CommandReceiver {
             throw new BadCommandException("user.spawn.not_enough_space");
         }
         NpcData data = new NpcData(b.getLocation().clone().add(.5, 0, .5), name, type);
-        String npcId = plugin.entitiesManager.createNPC(data);
+        String npcId = plugin.entitiesManager.createNpcDefinition(data);
         msg(sender, "user.spawn.id_created", npcId);
     }
 
@@ -77,10 +79,7 @@ public class CommandHandler extends CommandReceiver {
         if (npcId == null) {
             throw new BadCommandException("user.info.no_selection");
         }
-        NpcData data = plugin.cfg.npcData.npcList.get(npcId);
-        if (data == null) {
-            throw new BadCommandException("user.info.bad_id");
-        }
+        NpcData data = asNpcData(npcId);
         msg(sender, "user.info.msg_id", npcId);
         msg(sender, "user.info.msg_name", data.displayName);
         msg(sender, "user.info.msg_type", data.type.name());
@@ -95,14 +94,49 @@ public class CommandHandler extends CommandReceiver {
         }
     }
 
-    @SubCommand("newtrade")
-    public void newTrade(CommandSender sender, Arguments args) {
+    @SubCommand(value = "remove", permission = "npc.admin.remove")
+    public void removeNpcDefinition(CommandSender sender, Arguments args) {
+        String npcId = args.nextString();
+        asNpcData(npcId);
+        plugin.entitiesManager.removeNpcDefinition(npcId);
+    }
+
+    @SubCommand(value = "rename", permission = "npc.admin.edit")
+    public void renameNpc(CommandSender sender, Arguments args) {
+        String npcId = args.nextString();
+        NpcData data = asNpcData(npcId);
+        String newName = args.nextString();
+        data.displayName = newName;
+        plugin.entitiesManager.replaceNpcDefinition(npcId, data);
+    }
+
+    @SubCommand(value = "list", permission = "npc.admin.list")
+    public void listNpc(CommandSender sender, Arguments args) {
+        if (plugin.cfg.npcData.npcList.size() == 0) {
+            msg(sender, "user.list.no_npc");
+        } else {
+            for (Map.Entry<String, NpcData> e : plugin.cfg.npcData.npcList.entrySet()) {
+                msg(sender, "user.list.msg",
+                        e.getValue().displayName,
+                        e.getKey(),
+                        e.getValue().type);
+            }
+        }
+    }
+
+    @SubCommand(value = "newtrade", permission = "npc.admin.edit")
+    public void newTradeForNPC(CommandSender sender, Arguments args) {
+        String npcId = args.nextString();
+        NpcData npc = asNpcData(npcId);
+
         ItemStack itemStack1 = getItemStackInSlot(sender, 0, false);
         ItemStack itemStack2 = getItemStackInSlot(sender, 1, true);
         ItemStack result = getItemStackInSlot(sender, 2, false);
         TradeData data = new TradeData(itemStack1, itemStack2, result);
         String tradeId = plugin.cfg.tradeData.addTrade(data);
-        msg(sender, "user.new_trade.id_created", tradeId);
+        msg(sender, "user.newtrade.id_created", tradeId);
+        npc.trades.add(tradeId);
+        plugin.entitiesManager.replaceNpcDefinition(npcId, npc);
     }
 
     // helper functions
@@ -136,5 +170,16 @@ public class CommandHandler extends CommandReceiver {
         double normalProduct = v1.length() * v2.length();
         double cos = dot / normalProduct;
         return Math.acos(cos);
+    }
+
+    private NpcData asNpcData(String npcId) {
+        if (npcId == null) {
+            throw new BadCommandException("user.bad_id");
+        }
+        NpcData data = plugin.cfg.npcData.npcList.get(npcId);
+        if (data == null) {
+            throw new BadCommandException("user.bad_id");
+        }
+        return data;
     }
 }

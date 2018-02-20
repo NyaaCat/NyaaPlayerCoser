@@ -21,6 +21,13 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
+/**
+ * A NPC entity should never be stored in disk files.
+ * i.e. Entities should be removed when chunk unloads
+ *      and respawn on chunk load.
+ * Note the methods here should never call AIController directly.
+ * TODO : Inventory Window Sync (by events maybe)
+ */
 public class EntitiesManager implements Listener {
     public static final String METADATA_KEY = "NyaaNPC";
     public static final long TICK_FREQUENCY = 2; // onTick() will be called every 2 ticks
@@ -62,6 +69,7 @@ public class EntitiesManager implements Listener {
 
     public void destructor() {
         TICK_LISTENER.cancel();
+        pendingEntityCreation.clear();
         for (LivingEntity e : tracedEntities.values()) {
             e.remove();
         }
@@ -98,18 +106,10 @@ public class EntitiesManager implements Listener {
         }
     }
 
-    /**
-     * When an new NPC is created, first save to config then spawn it.
-     *
-     * @param data npcData
-     * @return npcId
-     */
-    public String createNPC(NpcData data) {
-        String npcId = plugin.cfg.npcData.addNpc(data);
-        pendingEntityCreation.add(npcId);
-        return npcId;
-    }
 
+    /**
+     * Scan all worlds and remove npc entities regardless they are traced or not.
+     */
     public void forceRespawnAllNpc() {
         pendingEntityCreation.clear();
         tracedEntities.clear();
@@ -127,6 +127,47 @@ public class EntitiesManager implements Listener {
             if (w == null) continue;
             if (!w.isChunkLoaded(data.chunkX(), data.chunkZ())) continue;
             pendingEntityCreation.add(e.getKey());
+        }
+    }
+
+    /**
+     * Remove then respawn one NPC
+     */
+    public void forceRespawnNpc(String npcId) {
+        if (tracedEntities.containsKey(npcId)) {
+            tracedEntities.remove(npcId).remove();
+        }
+        pendingEntityCreation.add(npcId);
+    }
+
+    /**
+     * When an new NPC is created, first save to config then spawn it.
+     *
+     * @param data npcData
+     * @return npcId
+     */
+    public String createNpcDefinition(NpcData data) {
+        String npcId = plugin.cfg.npcData.addNpc(data);
+        pendingEntityCreation.add(npcId);
+        return npcId;
+    }
+
+    /**
+     * Update then respawn the NPC.
+     * Exception thrown if not exists
+     */
+    public void replaceNpcDefinition(String npcId, NpcData data) {
+        plugin.cfg.npcData.replaceNpc(npcId, data);
+        forceRespawnNpc(npcId);
+    }
+
+    /**
+     * Remove the NPC config and the npc entity.
+     */
+    public void removeNpcDefinition(String npcId) {
+        plugin.cfg.npcData.removeNpc(npcId);
+        if (tracedEntities.containsKey(npcId)) {
+            tracedEntities.remove(npcId).remove();
         }
     }
 

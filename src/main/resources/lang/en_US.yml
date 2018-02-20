@@ -1,4 +1,5 @@
 user:
+  bad_id: "No NPC corresponds to this id."
   spawn:
     type_disallow: NPC type %s is not allowed.
     not_block: NPCs must be placed on blocks.
@@ -6,14 +7,17 @@ user:
     id_created: "New NPC ID is: %s"
   info:
     no_selection: You should provide an id or be near to an NPC.
-    bad_id: No NPC corresponds to this id.
     msg_id: "NPC ID: %s"
     msg_name: "NPC Name: %s"
     msg_type: "NPC Type: %s"
     msg_loc: "NPC Location: %s"
     msg_trade: "NPC Trade: %s"
     msg_no_trade: "NPC has no trade"
-
+  list:
+    no_npc: No NPC exists.
+    msg: "%s [id=%s, type=%s]"
+  newtrade:
+    id_created: "New trade ID is: %s"
 
 
 manual:
@@ -29,3 +33,15 @@ manual:
   info:
     description: Show NPC info, by id or by cursor position
     usage: /npc info [npcId]
+  remove:
+    description: Remove NPC by ID
+    usage: /npc remove <npcId>
+  rename:
+    description: Rename NPC by ID
+    usage: /npc rename <npcId> <newNpcName>
+  list:
+    description: List all NPCs
+    usage: /npc list
+  newtrade:
+    description: Add a trade to the NPC according to the inventory slot 1,2,3
+    usage: /npc newtrade <npcId>

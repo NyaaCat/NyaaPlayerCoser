@@ -41,6 +41,6 @@ public class TradeDataConfig extends FileConfigure {
         }
         tradeList.put(Integer.toString(maxId), data);
         save();
-        return Integer.toString(maxId);
+        return Integer.toString(maxId++);
     }
 }

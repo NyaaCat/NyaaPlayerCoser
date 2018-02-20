@@ -31,7 +31,7 @@ public class NpcDataConfig extends FileConfigure {
 
     /**
      * Add an new npc then save immediately.
-     * You may want to use {@link cat.nyaa.npc.EntitiesManager#createNPC(NpcData)}
+     * You may want to use {@link cat.nyaa.npc.EntitiesManager#createNpcDefinition(NpcData)}
      *
      * @param data npc data
      * @return newly assigned npc id.
@@ -42,7 +42,23 @@ public class NpcDataConfig extends FileConfigure {
         }
         npcList.put(Integer.toString(maxId), data);
         save();
-        return Integer.toString(maxId);
+        return Integer.toString(maxId++);
+    }
+
+    /**
+     * Replace current NPC definition.
+     * You may want to use {@link cat.nyaa.npc.EntitiesManager#replaceNpcDefinition(String, NpcData)}
+     */
+    public void replaceNpc(String npcId, NpcData data) {
+        if (!npcList.containsKey(npcId)) throw new IllegalArgumentException();
+        npcList.put(npcId, data);
+        save();
+    }
+
+    public void removeNpc(String npcId) {
+        if (!npcList.containsKey(npcId)) throw new IllegalArgumentException();
+        npcList.remove(npcId);
+        save();
     }
 
     /**
