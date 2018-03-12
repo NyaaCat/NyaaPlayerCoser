@@ -16,7 +16,7 @@ public class NpcData implements ISerializable {
     public NpcData() {
     }
 
-    public NpcData(Location loc, String displayName, EntityType type) {
+    public NpcData(Location loc, String displayName, EntityType type, String nbtTag) {
         if (!type.isAlive() || !type.isSpawnable()) throw new IllegalArgumentException();
         this.worldName = loc.getWorld().getName();
         this.x = loc.getX();
@@ -24,6 +24,7 @@ public class NpcData implements ISerializable {
         this.z = loc.getZ();
         this.displayName = displayName;
         this.type = type;
+        this.nbtTag = nbtTag;
     }
 
     @Serializable
@@ -36,6 +37,8 @@ public class NpcData implements ISerializable {
     public Double z;
     @Serializable
     public String displayName;
+    @Serializable
+    public String nbtTag;
     @Serializable
     public EntityType type;
     @Serializable

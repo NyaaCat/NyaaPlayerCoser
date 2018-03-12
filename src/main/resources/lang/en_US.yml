@@ -29,7 +29,7 @@ manual:
     usage: /npc reload
   spawn:
     description: Define new NPC, will be placed at cursor
-    usage: /npc spawn <NpcType> <NpcName>
+    usage: /npc spawn <NpcType> <NpcName> [EntitydataTag]
   info:
     description: Show NPC info, by id or by cursor position
     usage: /npc info [npcId]

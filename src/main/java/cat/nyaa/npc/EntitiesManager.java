@@ -85,6 +85,8 @@ public class EntitiesManager implements Listener {
     public void onTick() {
         while (pendingEntityCreation.size() > 0) {
             String npcId = pendingEntityCreation.remove();
+
+            // check spawning conditions
             NpcData data = plugin.cfg.npcData.npcList.get(npcId);
             if (data == null) continue;
             World w = Bukkit.getWorld(data.worldName);
@@ -92,7 +94,13 @@ public class EntitiesManager implements Listener {
             if (!w.isChunkLoaded(data.chunkX(), data.chunkZ())) continue;
             Location loc = new Location(w, data.x, data.y, data.z);
 
+            // spawn
             LivingEntity e = (LivingEntity) w.spawnEntity(loc, data.type);
+            if (data.nbtTag != null && data.nbtTag.length() > 0) {
+                NmsUtils.setEntityTag(e, data.nbtTag);
+            }
+
+            // post spawn customization
             e.setMetadata(METADATA_KEY, new FixedMetadataValue(plugin, npcId));
             e.setCustomName(data.displayName);
             e.setCustomNameVisible(true);
