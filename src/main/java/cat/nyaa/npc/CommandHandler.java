@@ -52,7 +52,7 @@ public class CommandHandler extends CommandReceiver {
         if (b.getRelative(BlockFace.UP).getType().isSolid() || b.getRelative(0, 2, 0).getType().isSolid()) {
             throw new BadCommandException("user.spawn.not_enough_space");
         }
-        NpcData data = new NpcData(b.getLocation().clone().add(.5, 0, .5), name, type, entitydataTag);
+        NpcData data = new NpcData(b.getLocation().clone().add(.5, NmsUtils.getBlockHeight(b), .5), name, type, entitydataTag);
         String npcId = plugin.entitiesManager.createNpcDefinition(data);
         msg(sender, "user.spawn.id_created", npcId);
     }
@@ -140,8 +140,6 @@ public class CommandHandler extends CommandReceiver {
         npc.trades.add(tradeId);
         plugin.entitiesManager.replaceNpcDefinition(npcId, npc);
     }
-
-    // helper functions
 
     private Block getRayTraceBlock(CommandSender sender) {
         try {

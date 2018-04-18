@@ -1,7 +1,9 @@
 package cat.nyaa.npc;
 
 import net.minecraft.server.v1_12_R1.*;
+import org.bukkit.craftbukkit.v1_12_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_12_R1.entity.CraftEntity;
+import org.bukkit.craftbukkit.v1_12_R1.util.CraftMagicNumbers;
 import org.bukkit.entity.Entity;
 
 import java.util.UUID;
@@ -34,5 +36,10 @@ public final class NmsUtils {
                 nmsEntity.f(nmsOrigNBT); // set nbt
             }
         }
+    }
+
+    public static double getBlockHeight(org.bukkit.block.Block block) {
+        Block nmsBlock = CraftMagicNumbers.getBlock(block);
+        return nmsBlock.getBlockData().e(((CraftWorld) block.getWorld()).getHandle(), new BlockPosition(block.getX(), block.getY(), block.getZ())).e;
     }
 }
