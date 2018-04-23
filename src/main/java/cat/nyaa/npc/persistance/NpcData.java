@@ -54,10 +54,6 @@ public class NpcData implements ISerializable {
         return ((int) Math.floor(z)) >> 4;
     }
 
-    public Location getLocation() {
-        return new Location(Bukkit.getWorld(worldName), x, y, z);
-    }
-
     /**
      * Get a dummy merchant that player can trade with
      */

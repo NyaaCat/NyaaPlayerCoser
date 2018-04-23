@@ -4,14 +4,10 @@ import cat.nyaa.npc.persistance.NpcData;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
@@ -19,10 +15,8 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -36,7 +30,6 @@ import java.util.Queue;
  */
 public class EntitiesManager implements Listener {
     public static final String METADATA_KEY = "NyaaNPC";
-    public static final String NPC_NAME_PREFIX = ChatColor.translateAlternateColorCodes('&',"&a&5&4&e&r");
     public static final long TICK_FREQUENCY = 2; // onTick() will be called every 2 ticks
 
     private final BukkitRunnable TICK_LISTENER = new BukkitRunnable() {
@@ -57,12 +50,6 @@ public class EntitiesManager implements Listener {
             enabled = false; // in case the buggy cancel() not works.
         }
     };
-    private final BukkitRunnable npcRespawnTask = new BukkitRunnable() {
-        @Override
-        public void run() {
-            resetAllNpcStatus();
-        }
-    };
 
     private final NyaaPlayerCoser plugin;
     private final Queue<String> pendingEntityCreation = new LinkedList<>();
@@ -78,7 +65,6 @@ public class EntitiesManager implements Listener {
         forceRespawnAllNpc();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         TICK_LISTENER.runTaskTimer(plugin, 20L, TICK_FREQUENCY);
-        npcRespawnTask.runTaskTimer(plugin, 300L, 300L);
     }
 
     public void destructor() {
@@ -116,19 +102,13 @@ public class EntitiesManager implements Listener {
 
             // post spawn customization
             e.setMetadata(METADATA_KEY, new FixedMetadataValue(plugin, npcId));
-            e.setCustomName(NPC_NAME_PREFIX + data.displayName);
+            e.setCustomName(data.displayName);
             e.setCustomNameVisible(true);
             e.setAI(false);
             e.setCollidable(false);
             e.setRemoveWhenFarAway(false);
             e.setInvulnerable(true);
             e.setSilent(true);
-            if (e instanceof Ageable) {
-                ((Ageable) e).setAdult();
-            }
-            if (e instanceof Zombie) {
-                ((Zombie) e).setBaby(false);
-            }
             tracedEntities.put(npcId, e);
             return;
         }
@@ -166,21 +146,6 @@ public class EntitiesManager implements Listener {
             tracedEntities.remove(npcId).remove();
         }
         pendingEntityCreation.add(npcId);
-    }
-
-    public void resetAllNpcStatus() {
-        ArrayList<String> diedNpcEntities = new ArrayList<String>();
-        for (String key : tracedEntities.keySet()) {
-            LivingEntity entity = tracedEntities.get(key);
-            if (entity != null && entity.isValid()) {
-                entity.getActivePotionEffects().stream().map(PotionEffect::getType).forEach(entity::removePotionEffect);
-                entity.setHealth(entity.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
-                entity.teleport(plugin.cfg.npcData.npcList.get(key).getLocation());
-            } else {
-                diedNpcEntities.add(key);
-            }
-        }
-        diedNpcEntities.forEach(this::forceRespawnNpc);
     }
 
     /**
@@ -222,10 +187,8 @@ public class EntitiesManager implements Listener {
     public void onChunkLoad(ChunkLoadEvent ev) {
         if (ev.isNewChunk()) return;
         for (Entity e : ev.getChunk().getEntities()) {
-            if (e.isInvulnerable() && e.isCustomNameVisible() && e.getCustomName() != null) {
-                if (e.hasMetadata(METADATA_KEY) || e.getCustomName().startsWith(NPC_NAME_PREFIX)) {
-                    e.remove();
-                }
+            if (e.hasMetadata(METADATA_KEY)) {
+                e.remove();
             }
         }
         pendingEntityCreation.addAll(plugin.cfg.npcData.getNpcInChunk(ev.getWorld().getName(), ev.getChunk().getX(), ev.getChunk().getZ()).keySet());
