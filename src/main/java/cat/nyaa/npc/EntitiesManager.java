@@ -102,6 +102,7 @@ public class EntitiesManager implements Listener {
 
             // post spawn customization
             e.setMetadata(METADATA_KEY, new FixedMetadataValue(plugin, npcId));
+            e.addScoreboardTag(METADATA_KEY);
             e.setCustomName(data.displayName);
             e.setCustomNameVisible(true);
             e.setAI(false);
@@ -187,7 +188,7 @@ public class EntitiesManager implements Listener {
     public void onChunkLoad(ChunkLoadEvent ev) {
         if (ev.isNewChunk()) return;
         for (Entity e : ev.getChunk().getEntities()) {
-            if (e.hasMetadata(METADATA_KEY)) {
+            if (e.hasMetadata(METADATA_KEY) || e.getScoreboardTags().contains(METADATA_KEY)) {
                 e.remove();
             }
         }
