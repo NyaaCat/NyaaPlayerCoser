@@ -19,6 +19,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 
 /**
@@ -29,7 +30,7 @@ import java.util.Queue;
  * TODO : Inventory Window Sync (by events maybe)
  */
 public class EntitiesManager implements Listener {
-    public static final String METADATA_KEY = "NyaaNPC";
+    public static final String SCOREBOARD_TAG_PREFIX = "nyaa_npc_id:";
     public static final long TICK_FREQUENCY = 2; // onTick() will be called every 2 ticks
 
     private final BukkitRunnable TICK_LISTENER = new BukkitRunnable() {
@@ -101,8 +102,7 @@ public class EntitiesManager implements Listener {
             }
 
             // post spawn customization
-            e.setMetadata(METADATA_KEY, new FixedMetadataValue(plugin, npcId));
-            e.addScoreboardTag(METADATA_KEY);
+            e.addScoreboardTag(SCOREBOARD_TAG_PREFIX+npcId);
             e.setCustomName(data.displayName);
             e.setCustomNameVisible(true);
             e.setAI(false);
@@ -188,7 +188,7 @@ public class EntitiesManager implements Listener {
     public void onChunkLoad(ChunkLoadEvent ev) {
         if (ev.isNewChunk()) return;
         for (Entity e : ev.getChunk().getEntities()) {
-            if (e.hasMetadata(METADATA_KEY) || e.getScoreboardTags().contains(METADATA_KEY)) {
+            if (isNyaaNPC(e)) {
                 e.remove();
             }
         }
@@ -201,7 +201,7 @@ public class EntitiesManager implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onChunkUnLoad(ChunkUnloadEvent ev) {
         for (Entity e : ev.getChunk().getEntities()) {
-            if (e.hasMetadata(METADATA_KEY)) {
+            if (isNyaaNPC(e)) {
                 tracedEntities.inverse().remove(e);
                 e.remove();
             }
@@ -223,13 +223,22 @@ public class EntitiesManager implements Listener {
     }
 
     /**
-     * Check if the entity is an NyaaNPC
+     * Check if the entity is a NyaaNPC
      */
     public static boolean isNyaaNPC(Entity e) {
-        return (e instanceof LivingEntity) && (e.hasMetadata(METADATA_KEY));
+        return getNyaaNpcId(e) != null;
     }
 
+    /**
+     * @param e the entity
+     * @return npcid if it is a NyaaNPC, null otherwise
+     */
     public static String getNyaaNpcId(Entity e) {
-        return e.getMetadata(METADATA_KEY).get(0).asString();
+        for (String s : e.getScoreboardTags()) {
+            if (s.startsWith(SCOREBOARD_TAG_PREFIX)) {
+                return s.substring(SCOREBOARD_TAG_PREFIX.length());
+            }
+        }
+        return null;
     }
 }
