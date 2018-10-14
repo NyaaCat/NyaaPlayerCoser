@@ -3,7 +3,11 @@ package cat.nyaa.npc;
 import cat.nyaa.npc.persistance.NpcData;
 import cat.nyaa.npc.persistance.TradeData;
 import cat.nyaa.nyaacore.CommandReceiver;
+import cat.nyaa.nyaacore.utils.ClickSelectionUtils;
+import cat.nyaa.nyaacore.utils.NmsUtils;
 import cat.nyaa.nyaacore.utils.RayTraceUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -17,6 +21,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import java.util.Map;
+import java.util.UUID;
 
 public class CommandHandler extends CommandReceiver {
     private final NyaaPlayerCoser plugin;
@@ -52,7 +57,7 @@ public class CommandHandler extends CommandReceiver {
         if (b.getRelative(BlockFace.UP).getType().isSolid() || b.getRelative(0, 2, 0).getType().isSolid()) {
             throw new BadCommandException("user.spawn.not_enough_space");
         }
-        NpcData data = new NpcData(b.getLocation().clone().add(.5, NmsUtils.getBlockHeight(b), .5), name, type, entitydataTag);
+        NpcData data = new NpcData(asPlayer(sender).getUniqueId(), b.getLocation().clone().add(.5, /* TODO: NmsUtils.getBlockHeight(b) */ 1, .5), name, type, entitydataTag);
         String npcId = plugin.entitiesManager.createNpcDefinition(data);
         msg(sender, "user.spawn.id_created", npcId);
     }
@@ -141,12 +146,62 @@ public class CommandHandler extends CommandReceiver {
         plugin.entitiesManager.replaceNpcDefinition(npcId, npc);
     }
 
-    private Block getRayTraceBlock(CommandSender sender) {
-        try {
-            return RayTraceUtils.rayTraceBlock(asPlayer(sender));
-        } catch (ReflectiveOperationException ex) {
-            throw (BadCommandException) (new BadCommandException().initCause(ex));
+    @SubCommand(value = "chest", permission = "npc.admin.edit")
+    public void editChestInfo(CommandSender sender, Arguments args) {
+        String npcId = args.nextString();
+        NpcData npc = asNpcData(npcId);
+
+        String action = args.next();
+        if (action == null) { // print info
+            Location chestLocation = npc.getChestLocation();
+            msg(sender, "user.chest.status", chestLocation != null);
+            msg(sender, "user.chest.unlimited", !npc.chestEnabled);
+            if (chestLocation != null) {
+                msg(sender, "user.chest.chest_pos", chestLocation.getWorld().getName(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());
+                msg(sender, "user.chest.hint_unlink");
+            } else {
+                msg(sender, "user.chest.hint_link");
+            }
+        } else if ("unlink".equalsIgnoreCase(action)) {
+            npc.setChestLocation(null);
+            npc.chestEnabled = false;
+            plugin.entitiesManager.replaceNpcDefinition(npcId, npc);
+            msg(sender, "user.chest.msg_unlinked");
+        } else if ("link".equalsIgnoreCase(action)) {
+            msg(sender, "user.chest.prompt_click");
+            UUID playerId = asPlayer(sender).getUniqueId();
+            ClickSelectionUtils.registerRightClickBlock(playerId, 15, (Location l) -> {
+                // we are not in the same tick, re-validate everything
+                Player p = Bukkit.getPlayer(playerId);
+                if (p == null || !p.isOnline()) return;
+                if (l == null) {
+                    msg(p, "user.chest.timeout");
+                    return;
+                }
+                NpcData npc2 = asNpcData(npcId);
+                if (npc != npc2) {
+                    msg(sender, "user.chest.npc_changed");
+                    return;
+                }
+                Block b = l.getBlock();
+                if (b == null) {
+                    msg(sender, "user.chest.invalid_chest_block");
+                    return;
+                }
+                Material m = b.getType();
+                if (m != Material.CHEST && m != Material.TRAPPED_CHEST && m != Material.SHULKER_BOX) {
+                    msg(sender, "user.chest.invalid_chest_block");
+                    return;
+                }
+                npc.setChestLocation(l);
+                plugin.entitiesManager.replaceNpcDefinition(npcId, npc);
+                msg(sender, "user.chest.msg_linked");
+            }, plugin);
         }
+    }
+
+    private Block getRayTraceBlock(CommandSender sender) {
+        return RayTraceUtils.rayTraceBlock(asPlayer(sender));
     }
 
     private boolean isChunkLoadedAtBlockCoordinate(World w, int x, int z) {

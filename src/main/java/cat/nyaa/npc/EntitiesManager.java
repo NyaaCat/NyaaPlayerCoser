@@ -1,6 +1,7 @@
 package cat.nyaa.npc;
 
 import cat.nyaa.npc.persistance.NpcData;
+import cat.nyaa.nyaacore.utils.NmsUtils;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.bukkit.Bukkit;

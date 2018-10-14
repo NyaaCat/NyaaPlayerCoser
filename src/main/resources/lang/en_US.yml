@@ -18,7 +18,18 @@ user:
     msg: "%s [id=%s, type=%s]"
   newtrade:
     id_created: "New trade ID is: %s"
-
+  chest:
+    status: "This NPC is linked to a chest: %s"
+    unlimited: "This NPC has unlimited inventory: %s"
+    chest_pos: "Chest location: {world:%s, x:%d, y:%d, z:%d}"
+    hint_unlink: "Use /npc chest <npcId> unlink to unlink the chest"
+    hint_link: "Use /npc chest <npcId> link to link a chest"
+    msg_unlinked: "Chest unlinked and the NPC now has unlimited inventory."
+    prompt_click: "Right click the chest you want to link to in 15 seconds."
+    chest: "No chest is clicked on. Linking cancelled."
+    npc_changed: "This NPC definition has been changed. Linking cancelled."
+    invalid_chest_block: "This block is not a valid chest."
+    msg_linked: "Chest linked."
 
 manual:
   help:
@@ -39,6 +50,9 @@ manual:
   rename:
     description: Rename NPC by ID
     usage: /npc rename <npcId> <newNpcName>
+  chest:
+    description: Show/edit the related chest info
+    usage: /npc chest <npcId> [link|unlink]
   list:
     description: List all NPCs
     usage: /npc list

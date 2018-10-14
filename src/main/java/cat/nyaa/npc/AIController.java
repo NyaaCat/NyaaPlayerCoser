@@ -47,4 +47,6 @@ public class AIController implements Listener {
     public void onPlayerCloseWindow(InventoryCloseEvent ev) {
         openedNPCWindow.remove(ev.getView());
     }
+
+    // TODO: chest inventory
 }

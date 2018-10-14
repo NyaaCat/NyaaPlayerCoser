@@ -4,6 +4,8 @@ import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.nyaacore.configuration.ISerializable;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.Merchant;
 import org.bukkit.inventory.MerchantRecipe;
@@ -11,13 +13,15 @@ import org.bukkit.inventory.MerchantRecipe;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class NpcData implements ISerializable {
     public NpcData() {
     }
 
-    public NpcData(Location loc, String displayName, EntityType type, String nbtTag) {
+    public NpcData(UUID ownerId, Location loc, String displayName, EntityType type, String nbtTag) {
         if (!type.isAlive() || !type.isSpawnable()) throw new IllegalArgumentException();
+        this.ownerId = ownerId;
         this.worldName = loc.getWorld().getName();
         this.x = loc.getX();
         this.y = loc.getY();
@@ -27,6 +31,32 @@ public class NpcData implements ISerializable {
         this.nbtTag = nbtTag;
     }
 
+    public void setChestLocation(Location l) {
+        if (l == null) { // unset location
+            chestWorldName = "";
+            chestX = chestY = chestZ = 0;
+        } else {
+            chestWorldName = l.getWorld().getName();
+            chestX = l.getBlockX();
+            chestY = l.getBlockY();
+            chestZ = l.getBlockZ();
+        }
+    }
+
+    public Location getChestLocation() {
+        if (!chestEnabled || chestWorldName == null || chestWorldName.length() <= 0) {
+            return null;
+        }
+        World w = Bukkit.getWorld(chestWorldName);
+        if (w == null) return null; // TODO warn
+        Location l = new Location(w, chestX, chestY, chestZ);
+        Material m = l.getBlock().getType();
+        if (m != Material.CHEST && m != Material.TRAPPED_CHEST && m != Material.SHULKER_BOX) return null; // TODO warn
+        return l;
+    }
+
+    @Serializable
+    public UUID ownerId;
     @Serializable
     public String worldName;
     @Serializable
@@ -45,6 +75,18 @@ public class NpcData implements ISerializable {
     public boolean enabled = true;
     @Serializable
     public List<String> trades = new ArrayList<>();
+
+
+    @Serializable
+    public String chestWorldName = "";
+    @Serializable
+    public int chestX = 0;
+    @Serializable
+    public int chestY = 0;
+    @Serializable
+    public int chestZ = 0;
+    @Serializable
+    public boolean chestEnabled; // when not using chest, trades are unlimited
 
     public int chunkX() {
         return ((int) Math.floor(x)) >> 4;

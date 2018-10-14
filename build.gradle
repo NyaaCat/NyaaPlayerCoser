@@ -6,7 +6,7 @@ plugins {
 // Note the spaces before and after the equals sign
 ext.majorVersion = 0
 ext.minorVersion = 1
-ext.minecraftVersion = "1.12"
+ext.minecraftVersion = "1.13.1"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -23,7 +23,7 @@ repositories {
         name 'Sonatype'
         url 'https://oss.sonatype.org/content/groups/public'
     }
-    
+
     maven {
         name 'NyaaCore'
         url 'https://raw.githubusercontent.com/NyaaCat/NyaaCore/maven-repo'
@@ -48,11 +48,20 @@ repositories {
         name 'langutils-repo'
         url 'https://raw.github.com/MascusJeoraly/LanguageUtils/mvn-repo/'
     }
+
+    maven {
+        name 'sk89q'
+        url 'http://maven.sk89q.com/artifactory/repo/'
+    }
 }
 
 dependencies {
-    compile 'org.spigotmc:spigot-api:1.12.1-R0.1-SNAPSHOT'
-    compile('cat.nyaa:nyaacore:4.1-SNAPSHOT') {
-        transitive = false
+    compile 'org.spigotmc:spigot-api:1.13.1-R0.1-SNAPSHOT'
+    if (gradle.hasProperty("useLocalDependencies") && gradle.useLocalDependencies) {
+        compile project(":NyaaCore")
+        compile project(":NyaaUtils")
+    } else {
+        compile('cat.nyaa:nyaacore:6.2-SNAPSHOT') { transitive = false }
+        compile('cat.nyaa:nyaautils:6.1-SNAPSHOT') { transitive = false }
     }
 }
