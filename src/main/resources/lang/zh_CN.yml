@@ -1,60 +1,60 @@
 user:
-  bad_id: ''
+  bad_id: 没有对应 ID 的 NPC。
   spawn:
-    type_disallow: ''
-    not_block: ''
-    not_enough_space: ''
-    id_created: ''
+    type_disallow: 不允许 %s 的 NPC。
+    not_block: NPC 必须放置在方块上。
+    not_enough_space: 空间不足以放置 NPC。
+    id_created: '新 NPC ID: %s'
   info:
-    no_selection: ''
-    msg_id: ''
-    msg_name: ''
-    msg_type: ''
-    msg_loc: ''
-    msg_trade: ''
-    msg_no_trade: ''
+    no_selection: 你需要提供 NPC ID 或站在一个 NPC 旁边。
+    msg_id: 'NPC ID: %s'
+    msg_name: 'NPC 名称: %s'
+    msg_type: 'NPC 类型: %s'
+    msg_loc: 'NPC 位置: %s'
+    msg_trade: 'NPC 交易: %s'
+    msg_no_trade: NPC 没有交易
   list:
-    no_npc: ''
-    msg: ''
+    no_npc: NPC 不存在。
+    msg: '%s [id=%s, type=%s]'
   newtrade:
-    id_created: ''
+    id_created: '新交易 ID: %s'
   chest:
-    status: ''
-    unlimited: ''
-    chest_pos: ''
-    hint_unlink: ''
-    hint_link: ''
-    msg_unlinked: ''
-    prompt_click: ''
-    chest: ''
-    npc_changed: ''
-    invalid_chest_block: ''
-    msg_linked: ''
+    status: '该 NPC 已连接到箱子: %s'
+    unlimited: 'NPC 拥有无限库存: %s'
+    chest_pos: '箱子位置: {world:%s, x:%d, y:%d, z:%d}'
+    hint_unlink: 使用 /npc chest <npcId> unlink 已取消箱子的连接
+    hint_link: 使用 /npc chest <npcId> link 以连接到箱子
+    msg_unlinked: NPC 的箱子已取消连接并拥有无限库存。
+    prompt_click: 请在 15 秒内右键点击希望连接的箱子。
+    chest: 没有箱子被点击，连接取消。
+    npc_changed: 该 NPC 定义已更改。连接取消。
+    invalid_chest_block: 该方块不是有效的箱子。
+    msg_linked: 箱子已连接。
 manual:
   help:
-    description: ''
-    usage: ''
+    description: 展示帮助信息
+    usage: /npc [subCommands...] help
   reload:
-    description: ''
-    usage: ''
+    description: 重新加载插件
+    usage: /npc reload
   spawn:
-    description: ''
-    usage: ''
+    description: 定义新 NPC，将生成在准星位置
+    usage: /npc spawn <NpcType> <NpcName> [EntitydataTag]
   info:
-    description: ''
-    usage: ''
+    description: 展示相应 ID 或准星位置处的 NPC 信息
+    usage: /npc info [npcId]
   remove:
-    description: ''
-    usage: ''
+    description: 移除相应 ID 的 NPC
+    usage: /npc remove <npcId>
   rename:
-    description: ''
-    usage: ''
+    description: 重命名相应 ID 的 NPC
+    usage: /npc rename <npcId> <newNpcName>
   chest:
-    description: ''
-    usage: ''
+    description: 展示/编辑相关箱子信息
+    usage: /npc chest <npcId> [link|unlink]
   list:
-    description: ''
-    usage: ''
+    description: 列出所有 NPC
+    usage: /npc list
   newtrade:
-    description: ''
-    usage: ''
+    description: 将需要兑换的物品按顺序分别放在生存物品栏的 1, 2, 3 号位置并添加该交易
+    usage: /npc newtrade <npcId>
