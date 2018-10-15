@@ -1,0 +1,60 @@
+user:
+  bad_id: ''
+  spawn:
+    type_disallow: ''
+    not_block: ''
+    not_enough_space: ''
+    id_created: ''
+  info:
+    no_selection: ''
+    msg_id: ''
+    msg_name: ''
+    msg_type: ''
+    msg_loc: ''
+    msg_trade: ''
+    msg_no_trade: ''
+  list:
+    no_npc: ''
+    msg: ''
+  newtrade:
+    id_created: ''
+  chest:
+    status: ''
+    unlimited: ''
+    chest_pos: ''
+    hint_unlink: ''
+    hint_link: ''
+    msg_unlinked: ''
+    prompt_click: ''
+    chest: ''
+    npc_changed: ''
+    invalid_chest_block: ''
+    msg_linked: ''
+manual:
+  help:
+    description: ''
+    usage: ''
+  reload:
+    description: ''
+    usage: ''
+  spawn:
+    description: ''
+    usage: ''
+  info:
+    description: ''
+    usage: ''
+  remove:
+    description: ''
+    usage: ''
+  rename:
+    description: ''
+    usage: ''
+  chest:
+    description: ''
+    usage: ''
+  list:
+    description: ''
+    usage: ''
+  newtrade:
+    description: ''
+    usage: ''
