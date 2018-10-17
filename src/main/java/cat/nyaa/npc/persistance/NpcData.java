@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class NpcData implements ISerializable {
+public class NpcData implements ISerializable, Cloneable {
     public NpcData() {
     }
 
@@ -111,5 +111,12 @@ public class NpcData implements ISerializable {
         }
         merchant.setRecipes(recipes);
         return merchant;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        NpcData cloned = (NpcData)(super.clone());
+        // TODO: deep clone
+        return cloned;
     }
 }

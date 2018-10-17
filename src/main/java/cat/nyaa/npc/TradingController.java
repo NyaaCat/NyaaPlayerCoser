@@ -1,8 +1,11 @@
 package cat.nyaa.npc;
 
+import cat.nyaa.npc.events.NpcRedefinedEvent;
+import cat.nyaa.npc.events.NpcUndefinedEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.InventoryView;
@@ -11,15 +14,15 @@ import org.bukkit.inventory.Merchant;
 import java.util.HashSet;
 import java.util.Set;
 
-public class AIController implements Listener {
+public class TradingController implements Listener {
     private final NyaaPlayerCoser plugin;
 
     /**
-     * AIController keeps track of all the trading windows.
-     * It's important to {@link AIController#destructor}
+     * TradingController keeps track of all the trading windows.
+     * It's important to {@link TradingController#destructor}
      * when reloading the plugin.
      */
-    public AIController(NyaaPlayerCoser plugin) {
+    public TradingController(NyaaPlayerCoser plugin) {
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -46,6 +49,22 @@ public class AIController implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerCloseWindow(InventoryCloseEvent ev) {
         openedNPCWindow.remove(ev.getView());
+    }
+
+    @EventHandler
+    public void onNpcUndefined(NpcUndefinedEvent ev) {
+
+    }
+
+    @EventHandler
+    public void onNpcModified(NpcRedefinedEvent ev) {
+
+    }
+
+    public void onPlayerInteractWithWindow(InventoryClickEvent ev) {
+        if (openedNPCWindow.contains(ev.getView())) {
+            ev.getWhoClicked().sendMessage("Clicked on: " + ev.getClickedInventory().toString());
+        }
     }
 
     // TODO: chest inventory

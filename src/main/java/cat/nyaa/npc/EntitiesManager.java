@@ -1,5 +1,8 @@
 package cat.nyaa.npc;
 
+import cat.nyaa.npc.events.NpcDefinedEvent;
+import cat.nyaa.npc.events.NpcRedefinedEvent;
+import cat.nyaa.npc.events.NpcUndefinedEvent;
 import cat.nyaa.npc.persistance.NpcData;
 import cat.nyaa.nyaacore.utils.NmsUtils;
 import com.google.common.collect.BiMap;
@@ -27,8 +30,7 @@ import java.util.Queue;
  * A NPC entity should never be stored in disk files.
  * i.e. Entities should be removed when chunk unloads
  *      and respawn on chunk load.
- * Note the methods here should never call AIController directly.
- * TODO : Inventory Window Sync (by events maybe)
+ * Note the methods here should never call TradingController directly.
  */
 public class EntitiesManager implements Listener {
     public static final String SCOREBOARD_TAG_PREFIX = "nyaa_npc_id:";
@@ -159,6 +161,7 @@ public class EntitiesManager implements Listener {
     public String createNpcDefinition(NpcData data) {
         String npcId = plugin.cfg.npcData.addNpc(data);
         pendingEntityCreation.add(npcId);
+        Bukkit.getServer().getPluginManager().callEvent(new NpcDefinedEvent(npcId, data));
         return npcId;
     }
 
@@ -167,18 +170,20 @@ public class EntitiesManager implements Listener {
      * Exception thrown if not exists
      */
     public void replaceNpcDefinition(String npcId, NpcData data) {
-        plugin.cfg.npcData.replaceNpc(npcId, data);
+        NpcData oldData = plugin.cfg.npcData.replaceNpc(npcId, data);
         forceRespawnNpc(npcId);
+        Bukkit.getServer().getPluginManager().callEvent(new NpcRedefinedEvent(npcId, oldData, data));
     }
 
     /**
      * Remove the NPC config and the npc entity.
      */
     public void removeNpcDefinition(String npcId) {
-        plugin.cfg.npcData.removeNpc(npcId);
+        NpcData oldData = plugin.cfg.npcData.removeNpc(npcId);
         if (tracedEntities.containsKey(npcId)) {
             tracedEntities.remove(npcId).remove();
         }
+        Bukkit.getServer().getPluginManager().callEvent(new NpcUndefinedEvent(npcId, oldData));
     }
 
     /**

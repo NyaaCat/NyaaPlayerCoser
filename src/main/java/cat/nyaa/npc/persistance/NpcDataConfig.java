@@ -49,16 +49,20 @@ public class NpcDataConfig extends FileConfigure {
      * Replace current NPC definition.
      * You may want to use {@link cat.nyaa.npc.EntitiesManager#replaceNpcDefinition(String, NpcData)}
      */
-    public void replaceNpc(String npcId, NpcData data) {
+    public NpcData replaceNpc(String npcId, NpcData data) {
         if (!npcList.containsKey(npcId)) throw new IllegalArgumentException();
+        NpcData oldData = npcList.get(npcId);
         npcList.put(npcId, data);
         save();
+        return oldData;
     }
 
-    public void removeNpc(String npcId) {
+    public NpcData removeNpc(String npcId) {
         if (!npcList.containsKey(npcId)) throw new IllegalArgumentException();
+        NpcData oldData = npcList.get(npcId);
         npcList.remove(npcId);
         save();
+        return oldData;
     }
 
     /**
