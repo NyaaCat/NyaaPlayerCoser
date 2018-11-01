@@ -17,7 +17,7 @@ public class NpcDefinedEvent extends Event {
 
     @Override
     public HandlerList getHandlers() {
-        return null;
+        return handlers;
     }
 
     private final String npcId;

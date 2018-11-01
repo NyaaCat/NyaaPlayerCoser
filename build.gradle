@@ -6,7 +6,7 @@ plugins {
 // Note the spaces before and after the equals sign
 ext.majorVersion = 0
 ext.minorVersion = 1
-ext.minecraftVersion = "1.13.1"
+ext.minecraftVersion = "1.13.2"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -26,7 +26,7 @@ repositories {
 
     maven {
         name 'NyaaCore'
-        url 'https://raw.githubusercontent.com/NyaaCat/NyaaCore/maven-repo'
+        url 'https://raw.githubusercontent.com/NyaaCat/NyaaCentral/maven-repo'
     }
 
     maven {
@@ -56,12 +56,15 @@ repositories {
 }
 
 dependencies {
-    compile 'org.spigotmc:spigot-api:1.13.1-R0.1-SNAPSHOT'
+    compile 'org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT'
     if (gradle.hasProperty("useLocalDependencies") && gradle.useLocalDependencies) {
         compile project(":NyaaCore")
         compile project(":NyaaUtils")
     } else {
-        compile('cat.nyaa:nyaacore:6.2-SNAPSHOT') { transitive = false }
+        compile('cat.nyaa:nyaacore:6.3-SNAPSHOT') { transitive = false }
         compile('cat.nyaa:nyaautils:6.1-SNAPSHOT') { transitive = false }
     }
+}
+compileJava {
+    options.compilerArgs += ["-Xplugin:NyaaUtilsLangAnnotationProcessor", "-Xlint:deprecation,unchecked,rawtypes"]
 }

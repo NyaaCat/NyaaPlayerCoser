@@ -6,6 +6,7 @@ depend: [NyaaCore]
 softdepend: []
 authors: [RecursiveG]
 website: "https://github.com/NyaaCat/NyaaPlayerCoser"
+api-version: 1.13
 
 commands:
   nyaaplayercoser:
