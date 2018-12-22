@@ -1,7 +1,6 @@
 plugins {
-    id 'java'
+    id 'java-library'
 }
-
 // Version strings used for CI
 // Note the spaces before and after the equals sign
 ext.majorVersion = 0
@@ -56,15 +55,30 @@ repositories {
 }
 
 dependencies {
-    compile 'org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT'
+    // spigot
+    compileOnly 'org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT'
+
+    // other plugins
     if (gradle.hasProperty("useLocalDependencies") && gradle.useLocalDependencies) {
-        compile project(":NyaaCore")
-        compile project(":NyaaUtils")
+        compileOnly project(":NyaaCore")
+        compileOnly project(":NyaaUtils")
     } else {
-        compile('cat.nyaa:nyaacore:6.3-SNAPSHOT') { transitive = false }
-        compile('cat.nyaa:nyaautils:6.1-SNAPSHOT') { transitive = false }
+        compileOnly('cat.nyaa:nyaacore:6.3-SNAPSHOT') { transitive = false }
+        compileOnly('cat.nyaa:nyaautils:6.1-SNAPSHOT') { transitive = false }
     }
+
+    // annotation processor
+    compileOnly 'org.librazy:NyaaUtilsLangChecker:2.0-SNAPSHOT'
+    annotationProcessor 'org.librazy:NyaaUtilsLangChecker:2.0-SNAPSHOT'
+    annotationProcessor "org.spigotmc:spigot-api:$minecraftVersion-R0.1-SNAPSHOT"
 }
-compileJava {
-    options.compilerArgs += ["-Xplugin:NyaaUtilsLangAnnotationProcessor", "-Xlint:deprecation,unchecked,rawtypes"]
+
+// extra config for NyaaCore Language string
+tasks.withType(JavaCompile) {
+    String nyaaCoreLangDir = gradle.hasProperty("NyaaCoreLangDirs") ? gradle.NyaaCoreLangDirs : null
+    if (nyaaCoreLangDir == null) { nyaaCoreLangDir = System.getenv("NYAACORE_LANG_DIR") }
+    options.compilerArgs += ["-Xplugin:NyaaUtilsLangAnnotationProcessor", "-Xlint:deprecation"]
+    if (nyaaCoreLangDir != null) {
+        options.compilerArgs += ["-ALANG_DIR_ADDITIONAL_PATH=" + nyaaCoreLangDir]
+    }
 }
