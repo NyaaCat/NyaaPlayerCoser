@@ -63,7 +63,7 @@ public class TradeData implements ISerializable {
     public int allowedTradeCount(ItemStack slot1, ItemStack slot2) {
         if (!exactMatch(slot1, item1) || !exactMatch(slot2, item2)) return -1;
         int c1 = slot1.getAmount() / item1.getAmount();
-        int c2 = slot2.getAmount() / item2.getAmount();
+        int c2 = (slot2 == null || slot2.getType() == AIR) ? Integer.MAX_VALUE : (slot2.getAmount() / item2.getAmount());
         return Math.min(c1, c2);
     }
 }

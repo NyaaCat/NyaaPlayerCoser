@@ -1,5 +1,6 @@
 package cat.nyaa.npc;
 
+import cat.nyaa.npc.persistance.DataImporter;
 import cat.nyaa.npc.persistance.NpcData;
 import cat.nyaa.npc.persistance.NpcType;
 import cat.nyaa.npc.persistance.TradeData;
@@ -40,6 +41,11 @@ public class CommandHandler extends CommandReceiver {
     @SubCommand(value = "reload", permission = "npc.admin.reload")
     public void reloadCommand(CommandSender sender, Arguments args) {
         plugin.onReload();
+    }
+
+    @SubCommand(value = "import", permission = "npc.admin.import")
+    public void importFromShopkeeper(CommandSender sender, Arguments args) {
+        DataImporter.importShopkeeper(plugin, sender);
     }
 
     @SubCommand(value = "spawn", permission = "npc.admin.spawn")
