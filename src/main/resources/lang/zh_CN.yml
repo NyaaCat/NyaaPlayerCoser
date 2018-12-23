@@ -32,7 +32,7 @@ user:
     msg_linked: 箱子已连接。
 manual:
   help:
-    description: 展示帮助信息
+    description: 显示帮助信息
     usage: /npc [subCommands...] help
   reload:
     description: 重新加载插件
