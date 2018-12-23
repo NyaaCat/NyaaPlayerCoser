@@ -1,5 +1,6 @@
 user:
   bad_id: "No NPC corresponds to this id."
+  empty_slot: "Slot %s is empty."
   spawn:
     type_disallow: NPC type %s is not allowed.
     not_block: NPCs must be placed on blocks.
@@ -9,13 +10,14 @@ user:
     no_selection: You should provide an id or be near to an NPC.
     msg_id: "NPC ID: %s"
     msg_name: "NPC Name: %s"
-    msg_type: "NPC Type: %s"
+    msg_type: "NPC EntityType: %s"
+    msg_npctype: "NPC Type: %s"
     msg_loc: "NPC Location: %s"
     msg_trade: "NPC Trade: %s"
     msg_no_trade: "NPC has no trade"
   list:
     no_npc: No NPC exists.
-    msg: "%s [id=%s, type=%s]"
+    msg: "%s [id=%s, type=%s, npctype=%s]"
   newtrade:
     id_created: "New trade ID is: %s"
   chest:
@@ -30,6 +32,11 @@ user:
     npc_changed: "This NPC definition has been changed. Linking cancelled."
     invalid_chest_block: "This block is not a valid chest."
     msg_linked: "Chest linked."
+    require_trader_type: "This npc is not a trader thus cannot be linked to a chest."
+    timeout: "Linking cancelled due to timeout."
+  interact:
+    open_merchant_fail: "Failed to open merchant view. Please report this bug."
+    type_not_support: "This npc type (%s) is not supported."
 
 manual:
   help:

@@ -44,7 +44,7 @@ public class NpcData implements ISerializable, Cloneable {
     }
 
     public Location getChestLocation() {
-        if (!chestEnabled || chestWorldName == null || chestWorldName.length() <= 0) {
+        if (npcType != NpcType.TRADER_BOX || chestWorldName == null || chestWorldName.length() <= 0) {
             return null;
         }
         World w = Bukkit.getWorld(chestWorldName);
@@ -74,9 +74,13 @@ public class NpcData implements ISerializable, Cloneable {
     @Serializable
     public boolean enabled = true;
     @Serializable
+    public NpcType npcType = NpcType.TRADER_UNLIMITED;
+
+    // meaningful for TRADER_BOX and TRADER_UNLIMITED
+    @Serializable
     public List<String> trades = new ArrayList<>();
 
-
+    // meaningful for TRADER_BOX
     @Serializable
     public String chestWorldName = "";
     @Serializable
@@ -85,8 +89,6 @@ public class NpcData implements ISerializable, Cloneable {
     public int chestY = 0;
     @Serializable
     public int chestZ = 0;
-    @Serializable
-    public boolean chestEnabled; // when not using chest, trades are unlimited
 
     public int chunkX() {
         return ((int) Math.floor(x)) >> 4;
@@ -94,23 +96,6 @@ public class NpcData implements ISerializable, Cloneable {
 
     public int chunkZ() {
         return ((int) Math.floor(z)) >> 4;
-    }
-
-    /**
-     * Get a dummy merchant that player can trade with
-     */
-    public Merchant getMerchant() {
-        Merchant merchant = Bukkit.createMerchant(displayName);
-        List<MerchantRecipe> recipes = new ArrayList<>();
-        Map<String, TradeData> tradeList = NyaaPlayerCoser.instance.cfg.tradeData.tradeList;
-        for (String i : trades) {
-            // TODO warn
-            if (tradeList.containsKey(i)) {
-                recipes.add(tradeList.get(i).getRecipe());
-            }
-        }
-        merchant.setRecipes(recipes);
-        return merchant;
     }
 
     @Override

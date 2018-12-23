@@ -1,6 +1,7 @@
 package cat.nyaa.npc;
 
 import cat.nyaa.npc.persistance.NpcData;
+import cat.nyaa.npc.persistance.NpcType;
 import cat.nyaa.npc.persistance.TradeData;
 import cat.nyaa.nyaacore.CommandReceiver;
 import cat.nyaa.nyaacore.utils.ClickSelectionUtils;
@@ -90,6 +91,7 @@ public class CommandHandler extends CommandReceiver {
         msg(sender, "user.info.msg_id", npcId);
         msg(sender, "user.info.msg_name", data.displayName);
         msg(sender, "user.info.msg_type", data.type.name());
+        msg(sender, "user.info.msg_npctype", data.npcType.name());
         msg(sender, "user.info.msg_loc",
                 String.format("[world=%s, x=%.2f, y=%.2f, z=%.2f]", data.worldName, data.x, data.y, data.z));
         if (data.trades.size() > 0) {
@@ -126,7 +128,8 @@ public class CommandHandler extends CommandReceiver {
                 msg(sender, "user.list.msg",
                         e.getValue().displayName,
                         e.getKey(),
-                        e.getValue().type);
+                        e.getValue().type.name(),
+                        e.getValue().npcType.name());
             }
         }
     }
@@ -150,12 +153,16 @@ public class CommandHandler extends CommandReceiver {
     public void editChestInfo(CommandSender sender, Arguments args) {
         String npcId = args.nextString();
         NpcData npc = asNpcData(npcId);
+        if (npc.npcType != NpcType.TRADER_UNLIMITED && npc.npcType != NpcType.TRADER_BOX) {
+            msg(sender, "user.chest.require_trader_type");
+            return;
+        }
 
         String action = args.next();
         if (action == null) { // print info
             Location chestLocation = npc.getChestLocation();
             msg(sender, "user.chest.status", chestLocation != null);
-            msg(sender, "user.chest.unlimited", !npc.chestEnabled);
+            msg(sender, "user.chest.unlimited", npc.npcType == NpcType.TRADER_UNLIMITED);
             if (chestLocation != null) {
                 msg(sender, "user.chest.chest_pos", chestLocation.getWorld().getName(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());
                 msg(sender, "user.chest.hint_unlink");
@@ -164,7 +171,7 @@ public class CommandHandler extends CommandReceiver {
             }
         } else if ("unlink".equalsIgnoreCase(action)) {
             npc.setChestLocation(null);
-            npc.chestEnabled = false;
+            npc.npcType = NpcType.TRADER_UNLIMITED;
             plugin.entitiesManager.replaceNpcDefinition(npcId, npc);
             msg(sender, "user.chest.msg_unlinked");
         } else if ("link".equalsIgnoreCase(action)) {
@@ -194,6 +201,7 @@ public class CommandHandler extends CommandReceiver {
                     return;
                 }
                 npc.setChestLocation(l);
+                npc.npcType = NpcType.TRADER_BOX;
                 plugin.entitiesManager.replaceNpcDefinition(npcId, npc);
                 msg(sender, "user.chest.msg_linked");
             }, plugin);
