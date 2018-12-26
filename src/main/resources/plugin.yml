@@ -3,7 +3,7 @@ main: cat.nyaa.npc.NyaaPlayerCoser
 description: "NPC plugin for NyaaCraft servers"
 version: 0.1
 depend: [NyaaCore]
-softdepend: []
+softdepend: [HamsterEcoHelper]
 authors: [RecursiveG]
 website: "https://github.com/NyaaCat/NyaaPlayerCoser"
 api-version: 1.13

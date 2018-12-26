@@ -125,6 +125,30 @@ public class CommandHandler extends CommandReceiver {
         plugin.entitiesManager.replaceNpcDefinition(npcId, data);
     }
 
+    @SubCommand(value = "modify", permission = "npc.admin.edit")
+    public void modifyNpc(CommandSender sender, Arguments args) {
+        String npcId = args.nextString();
+        NpcData data = asNpcData(npcId);
+        boolean modified = false;
+
+        String newName = args.argString("name", null);
+        if (newName != null) {
+            data.displayName = newName;
+            modified = true;
+        }
+
+        String newNpcType = args.argString("npctype", null);
+        if (newNpcType != null) {
+            NpcType newType = Arguments.parseEnum(NpcType.class, newNpcType);
+            data.npcType = newType;
+            modified = true;
+        }
+
+        if (modified) {
+            plugin.entitiesManager.replaceNpcDefinition(npcId, data);
+        }
+    }
+
     @SubCommand(value = "list", permission = "npc.admin.list")
     public void listNpc(CommandSender sender, Arguments args) {
         if (plugin.cfg.npcData.npcList.size() == 0) {

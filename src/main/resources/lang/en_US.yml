@@ -38,6 +38,7 @@ user:
     open_merchant_fail: "Failed to open merchant view. Please report this bug."
     type_not_support: "This npc type (%s) is not supported."
     not_ready: "This merchant is not ready for business."
+    heh_not_support: "HamsterEcoHelper plugin not found. You cannot interact with this NPC."
   adjust:
     not_spawned: "This NPC is not spawned. Cannot adjust."
     despawned: "This NPC got despawned. Process halted."
@@ -66,6 +67,9 @@ manual:
   rename:
     description: Rename NPC by ID
     usage: /npc rename <npcId> <newNpcName>
+  modify:
+    description: Modify NPC
+    usage: /npc modify <npcId> [name:<new_name>] [npctype:<npctype>] ...
   chest:
     description: Show/edit the related chest info
     usage: /npc chest <npcId> [link|unlink]

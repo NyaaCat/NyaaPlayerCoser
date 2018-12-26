@@ -4,5 +4,5 @@ public enum NpcType {
     UNSPECIFIED,
     TRADER_BOX,
     TRADER_UNLIMITED,
-    PLAYER_STORE
+    HEH_SELL_SHOP // shop sell to player
 }

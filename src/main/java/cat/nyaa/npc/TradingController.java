@@ -6,9 +6,7 @@ import cat.nyaa.npc.persistance.NpcData;
 import cat.nyaa.npc.persistance.NpcType;
 import cat.nyaa.npc.persistance.TradeData;
 import cat.nyaa.nyaacore.Pair;
-import cat.nyaa.nyaacore.utils.ItemStackUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -22,8 +20,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
 
 import java.util.*;
-
-import static org.bukkit.Material.AIR;
 
 public class TradingController implements Listener {
     private static class StructInProgressTrading {
@@ -187,6 +183,12 @@ public class TradingController implements Listener {
                 } else {
                     _deleteMerchant(m);
                     ev.getPlayer().sendMessage(I18n.format("user.interact.open_merchant_fail"));
+                }
+            } else if (npcData.npcType == NpcType.HEH_SELL_SHOP) {
+                try {
+                    ExternalPluginUtils.hehOpenPlayerShop(npcData.ownerId, ev.getPlayer(), ev.getRightClicked().getLocation(), "npc-"+npcId);
+                } catch (ExternalPluginUtils.OperationNotSupportedException ex) {
+                    ev.getPlayer().sendMessage(I18n.format("user.interact.heh_not_support"));
                 }
             } else {
                 ev.getPlayer().sendMessage(I18n.format("user.interact.type_not_support", npcData.npcType));
