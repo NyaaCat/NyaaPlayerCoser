@@ -29,7 +29,7 @@ permissions:
       npc.admin.reload: true
 
   npc.player:
-    description: Permission for players
+    description: Permissions for players
     default: true
     children:
       npc.player.spawn: true

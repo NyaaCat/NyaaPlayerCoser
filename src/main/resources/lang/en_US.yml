@@ -37,6 +37,15 @@ user:
   interact:
     open_merchant_fail: "Failed to open merchant view. Please report this bug."
     type_not_support: "This npc type (%s) is not supported."
+    not_ready: "This merchant is not ready for business."
+  adjust:
+    not_spawned: "This NPC is not spawned. Cannot adjust."
+    despawned: "This NPC got despawned. Process halted."
+    sampling: "Sampling NPC location [x:%.2f, y:$.2f, z:$.2f]"
+    sampling_fail: "Sampling NPC location [x:%.2f, y:$.2f, z:$.2f]. Location mismatch, retry."
+    sampling_ok: "Sampling NPC location [x:%.2f, y:$.2f, z:$.2f]. Location match."
+    success: "NPC location updated. New location [x:%.2f, y:$.2f, z:$.2f]"
+    fail: "NPC changes its location too frequently, cannot determine the stable location."
 
 manual:
   help:
@@ -66,3 +75,6 @@ manual:
   newtrade:
     description: Add a trade to the NPC according to the inventory slot 1,2,3
     usage: /npc newtrade <npcId>
+  adjust_location:
+    description: Automatically adjust NPC location.
+    usage: /npc adjust_location <npcId>

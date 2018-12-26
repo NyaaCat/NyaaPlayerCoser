@@ -12,12 +12,16 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
@@ -117,6 +121,7 @@ public class EntitiesManager implements Listener {
             e.setRemoveWhenFarAway(false);
             e.setInvulnerable(true);
             e.setSilent(true);
+            e.setCanPickupItems(false);
             e.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).addModifier(new AttributeModifier("immobile_entity", -1, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
             tracedEntities.put(npcId, e);
             return;
@@ -184,6 +189,13 @@ public class EntitiesManager implements Listener {
         pendingEntityCreation.add(npcId);
     }
 
+
+
+
+    /* *************************** */
+    /* NPC definition modification */
+    /* *************************** */
+
     /**
      * When an new NPC is created, first save to config then spawn it.
      *
@@ -217,6 +229,67 @@ public class EntitiesManager implements Listener {
         }
         Bukkit.getServer().getPluginManager().callEvent(new NpcUndefinedEvent(npcId, oldData));
     }
+
+    /**
+     * Automatically adjust npc location
+     * @param npcId
+     * @param operator
+     */
+    public void adjustNpcLocation(String npcId, CommandSender operator) {
+        if (!tracedEntities.containsKey(npcId)) {
+            operator.sendMessage(I18n.format("user.adjust.not_spawned"));
+        } else {
+            final LivingEntity le = tracedEntities.get(npcId);
+            le.setAI(true);
+            new BukkitRunnable() {
+                static final int SUCCESS_COUNT_REQ = 2;
+                static final int FAILURE_COUNT_REQ = 5;
+                int success_counter = SUCCESS_COUNT_REQ;
+                int failing_counter = FAILURE_COUNT_REQ;
+                Vector previous_location = null;
+
+                @Override
+                public void run() {
+                    if (!tracedEntities.containsValue(le)) {
+                        operator.sendMessage(I18n.format("user.adjust.despawned"));
+                        cancel();
+                    } else {
+                        Vector newLocation = le.getLocation().toVector();
+                        if (previous_location == null) {
+                            operator.sendMessage(I18n.format("user.adjust.sampling", newLocation.getX(), newLocation.getY(), newLocation.getZ()));
+                        } else if (newLocation.equals(previous_location)) {
+                            operator.sendMessage(I18n.format("user.adjust.sampling_ok", newLocation.getX(), newLocation.getY(), newLocation.getZ()));
+                            success_counter--;
+                        } else {
+                            operator.sendMessage(I18n.format("user.adjust.sampling_fail", newLocation.getX(), newLocation.getY(), newLocation.getZ()));
+                            success_counter = SUCCESS_COUNT_REQ;
+                            failing_counter--;
+                        }
+                        if (success_counter <= 0) {
+                            operator.sendMessage(I18n.format("user.adjust.success", newLocation.getX(), newLocation.getY(), newLocation.getZ()));
+                            NpcData data = plugin.cfg.npcData.npcList.get(npcId);
+                            if (data != null) {
+                                data.x = newLocation.getX();
+                                data.y = newLocation.getY();
+                                data.z = newLocation.getZ();
+                                replaceNpcDefinition(npcId, data);
+                            }
+                            cancel();
+                        } else if (failing_counter <= 0) {
+                            operator.sendMessage(I18n.format("user.adjust.fail"));
+                            forceRespawnNpc(npcId);
+                            cancel();
+                        }
+                        previous_location = newLocation;
+                    }
+                }
+            }.runTaskTimer(plugin, 10L, 20L);
+        }
+    }
+
+    /* ************************** */
+    /*       Event handlers       */
+    /* ************************** */
 
     /**
      * When a chunk loads, scan for (possible) NPC entities and remove them.
@@ -259,6 +332,24 @@ public class EntitiesManager implements Listener {
             pendingEntityCreation.add(id);
         }
     }
+
+    /**
+     * NPCs immune to any damages
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onNPCAttacked(EntityDamageEvent ev) {
+        if (isNyaaNPC(ev.getEntity())) {
+            ev.setCancelled(true);
+        }
+    }
+
+
+
+
+
+    /* ************************** */
+    /* Auxiliary static functions */
+    /* ************************** */
 
     /**
      * Check if the entity is a NyaaNPC

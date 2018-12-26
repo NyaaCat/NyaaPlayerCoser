@@ -176,6 +176,10 @@ public class TradingController implements Listener {
             final NpcData npcData = plugin.cfg.npcData.npcList.get(npcId);
 
             if (npcData.npcType == NpcType.TRADER_BOX || npcData.npcType == NpcType.TRADER_UNLIMITED) {
+                if (npcData.trades.size() <= 0) {
+                    ev.getPlayer().sendMessage(I18n.format("user.interact.not_ready"));
+                    return;
+                }
                 Merchant m = _newMerchant(npcData);
                 InventoryView iv = ev.getPlayer().openMerchant(m, false);
                 if (iv != null) {

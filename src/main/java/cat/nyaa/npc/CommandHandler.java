@@ -214,6 +214,13 @@ public class CommandHandler extends CommandReceiver {
         }
     }
 
+    @SubCommand(value = "adjust_location", permission = "npc.admin.edit")
+    public void adjustLocation(CommandSender sender, Arguments args) {
+        String npcId = args.nextString();
+        asNpcData(npcId);
+        plugin.entitiesManager.adjustNpcLocation(npcId, sender);
+    }
+
     private Block getRayTraceBlock(CommandSender sender) {
         return RayTraceUtils.rayTraceBlock(asPlayer(sender));
     }
