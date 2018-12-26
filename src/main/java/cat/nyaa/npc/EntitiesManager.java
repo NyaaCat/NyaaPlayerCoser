@@ -10,26 +10,29 @@ import com.google.common.collect.HashBiMap;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 
 /**
  * A NPC entity should never be stored in disk files.
  * i.e. Entities should be removed when chunk unloads
- *      and respawn on chunk load.
+ * and respawn on chunk load.
  * Note the methods here should never call TradingController directly.
  */
 public class EntitiesManager implements Listener {
@@ -57,6 +60,7 @@ public class EntitiesManager implements Listener {
 
     private final NyaaPlayerCoser plugin;
     private final Queue<String> pendingEntityCreation = new LinkedList<>();
+    private final Queue<LivingEntity> pendingUpdateLookDirection = new LinkedList<>();
     private final BiMap<String, LivingEntity> tracedEntities = HashBiMap.create(); // Map<NpcId, Entity>
 
     /**
@@ -105,7 +109,7 @@ public class EntitiesManager implements Listener {
             }
 
             // post spawn customization
-            e.addScoreboardTag(SCOREBOARD_TAG_PREFIX+npcId);
+            e.addScoreboardTag(SCOREBOARD_TAG_PREFIX + npcId);
             e.setCustomName(data.displayName);
             e.setCustomNameVisible(true);
             e.setAI(false);
@@ -113,9 +117,37 @@ public class EntitiesManager implements Listener {
             e.setRemoveWhenFarAway(false);
             e.setInvulnerable(true);
             e.setSilent(true);
+            e.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).addModifier(new AttributeModifier("immobile_entity", -1, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
             tracedEntities.put(npcId, e);
             return;
         }
+
+        if (pendingUpdateLookDirection.isEmpty()) {
+            pendingUpdateLookDirection.addAll(tracedEntities.values());
+        }
+        while (!pendingUpdateLookDirection.isEmpty()) {
+            LivingEntity e = pendingUpdateLookDirection.poll();
+            if (e == null || !tracedEntities.containsValue(e))
+                continue;
+            Vector vec = getNearestPlayerDirection(e, 3, 3, 3);
+            if (vec == null) {
+                NmsUtils.updateEntityYawPitch(e, null, 0F);
+            } else {
+                Location loc = e.getLocation().setDirection(vec);
+                NmsUtils.updateEntityYawPitch(e, loc.getYaw(), loc.getPitch());
+            }
+            return;
+        }
+
+    }
+
+    private Vector getNearestPlayerDirection(LivingEntity e, double x, double y, double z) {
+        List<Entity> l = e.getNearbyEntities(x, y, z);
+        LivingEntity le = (LivingEntity) l.stream().filter((t) -> t instanceof Player)
+                .sorted((a, b) -> (int) Math.signum(e.getLocation().distanceSquared(a.getLocation()) - e.getLocation().distanceSquared(b.getLocation())))
+                .findFirst().orElse(null);
+        if (le == null) return null;
+        return le.getEyeLocation().subtract(e.getEyeLocation()).toVector().normalize();
     }
 
 
