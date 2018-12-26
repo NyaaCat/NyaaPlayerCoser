@@ -20,7 +20,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
@@ -122,6 +121,7 @@ public class EntitiesManager implements Listener {
             e.setInvulnerable(true);
             e.setSilent(true);
             e.setCanPickupItems(false);
+            NmsUtils.setEntityOnGround(e, true);
             e.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).addModifier(new AttributeModifier("immobile_entity", -1, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
             tracedEntities.put(npcId, e);
             return;
@@ -303,7 +303,11 @@ public class EntitiesManager implements Listener {
                 e.remove();
             }
         }
-        pendingEntityCreation.addAll(plugin.cfg.npcData.getNpcInChunk(ev.getWorld().getName(), ev.getChunk().getX(), ev.getChunk().getZ()).keySet());
+        Map<String, NpcData> t = plugin.cfg.npcData.getNpcInChunk(ev.getWorld().getName(), ev.getChunk().getX(), ev.getChunk().getZ());
+//        for (String s : t.keySet()) {
+//            plugin.getLogger().info("ENQUEUE: " + s);
+//        }
+        pendingEntityCreation.addAll(t.keySet());
     }
 
     /**

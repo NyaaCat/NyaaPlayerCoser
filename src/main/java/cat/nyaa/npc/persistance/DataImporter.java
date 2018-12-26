@@ -1,17 +1,19 @@
 package cat.nyaa.npc.persistance;
 
 import cat.nyaa.npc.NyaaPlayerCoser;
-import cat.nyaa.nyaacore.Message;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Ocelot;
+import org.bukkit.entity.Villager;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.UUID;
 
 public class DataImporter {
@@ -90,7 +92,7 @@ public class DataImporter {
         npc.y = sec.getInt("y")+0.0;
         npc.z = sec.getInt("z")+0.5;
         npc.displayName = sec.getString("name", "");
-        npc.nbtTag = ""; // TODO
+        npc.nbtTag = assembleShopkeeperNbt(sec);
         npc.type = EntityType.fromName(sec.getString("object"));
         if (npc.type == null) throw new RuntimeException("Unknown entity type: " + sec.getString("object"));
         npc.enabled = true;
@@ -106,6 +108,36 @@ public class DataImporter {
         plugin.cfg.npcData.npcList.put(idxName, npc);
         skNpcIndex ++;
         return idxName;
+    }
+
+    private static final Random rnd = new Random();
+
+    /**
+     * https://github.com/Shopkeepers/Shopkeepers/tree/master/src/main/java/com/nisovin/shopkeepers/shopobjects/living/types
+     *
+     * @param sec shopkeeper section
+     * @return NBT string for summon command
+     */
+    private static final String assembleShopkeeperNbt(ConfigurationSection sec) {
+        EntityType entityType = EntityType.fromName(sec.getString("object"));
+        switch (entityType) {
+            case OCELOT: {
+                Ocelot.Type t = Ocelot.Type.valueOf(sec.getString("catType", "WILD_OCELOT"));
+                return String.format("{CatType:%d}", t.getId());
+            }
+            case VILLAGER: {
+                Villager.Profession prof = Villager.Profession.valueOf(sec.getString("prof", "FARMER"));
+                if (prof.isZombie()) prof = Villager.Profession.FARMER;
+                return String.format("{Profession:%d}", prof.ordinal());
+            }
+            case PARROT: {
+                return String.format("{Variant:%d}", rnd.nextInt(5));
+            }
+            // TODO creeper pigzombie zombie sheep
+            default: {
+                return "";
+            }
+        }
     }
 
 }
