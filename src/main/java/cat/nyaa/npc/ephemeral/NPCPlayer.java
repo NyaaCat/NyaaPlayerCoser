@@ -62,14 +62,17 @@ public class NPCPlayer extends NPCBase {
     private boolean spawned = false;
     private int entityId = 1000000;
     private Set<Player> inRangePlayers = new HashSet<>();
-    private float pitch = 0f;
-    private float yaw = 0f;
+    private byte pitch = 0;
+    private byte yaw = 0;
 
     public NPCPlayer(String id, NpcData data) {
         super(id, data);
         if (data.type != EntityType.PLAYER) throw new IllegalArgumentException("not a player npc");
         profile = new WrappedGameProfile(getVersion2UUID(), data.displayName);
         dataWatcher = new WrappedDataWatcher();
+        // https://wiki.vg/Entity_metadata#Entity
+        // https://github.com/dmulloy2/ProtocolLib/issues/160#issuecomment-192983554
+        dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(10, WrappedDataWatcher.Registry.get(Integer.class)), 3);
 
         World w = Bukkit.getWorld(data.worldName);
         if (w == null) throw new IllegalArgumentException();
@@ -81,6 +84,7 @@ public class NPCPlayer extends NPCBase {
         if (spawned && !inRangePlayers.contains(p)) {
             inRangePlayers.add(p);
             try {
+
                 PlayerInfoData playerInfoData = new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.CREATIVE, WrappedChatComponent.fromText(data.displayName));
                 PacketContainer pktList = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
                 pktList.getEnumModifier(EnumWrappers.PlayerInfoAction.class, 0).write(0, EnumWrappers.PlayerInfoAction.ADD_PLAYER);
@@ -94,8 +98,8 @@ public class NPCPlayer extends NPCBase {
                 pktSpawn.getDoubles().write(0, loc.getX());
                 pktSpawn.getDoubles().write(1, loc.getY());
                 pktSpawn.getDoubles().write(2, loc.getZ());
-                pktSpawn.getBytes().write(0, (byte) 0);
-                pktSpawn.getBytes().write(1, (byte) 0);
+                pktSpawn.getBytes().write(0, yaw); // yaw
+                pktSpawn.getBytes().write(1, pitch); // pitch
                 pktSpawn.getDataWatcherModifier().write(0, dataWatcher);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktSpawn);
 
@@ -154,7 +158,24 @@ public class NPCPlayer extends NPCBase {
 
     @Override
     public void setPitchYaw(Float pitch, Float yaw) {
+        if (pitch != null) this.pitch = (byte)(pitch / 360.0 * 256);
+        if (yaw != null) this.yaw = (byte)(yaw / 360.0 * 256);
+        PacketContainer pktEntityLook = ExternalPluginUtils.getPM()
+                .createPacketConstructor(PacketType.Play.Server.REL_ENTITY_MOVE_LOOK, int.class, long.class, long.class, long.class, byte.class, byte.class, boolean.class)
+                .createPacket(entityId, 0L, 0L, 0L, this.yaw, this.pitch, true);
+        PacketContainer pktEntityHeadRotation = ExternalPluginUtils.getPM().createPacket(PacketType.Play.Server.ENTITY_HEAD_ROTATION);
+        pktEntityHeadRotation.getIntegers().write(0, entityId);
+        pktEntityHeadRotation.getBytes().write(0, this.yaw);
 
+        for (Player p : inRangePlayers) {
+            try {
+                ExternalPluginUtils.getPM().sendServerPacket(p, pktEntityLook);
+                ExternalPluginUtils.getPM().sendServerPacket(p, pktEntityHeadRotation);
+            } catch (InvocationTargetException ex) {
+                p.sendMessage("NPC cannot update direction. Please report this bug.");
+                ex.printStackTrace();
+            }
+        }
     }
 
     @Override
