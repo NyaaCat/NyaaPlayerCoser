@@ -3,6 +3,8 @@ package cat.nyaa.npc;
 import cat.nyaa.HamsterEcoHelper.HamsterEcoHelper;
 import cat.nyaa.HamsterEcoHelper.database.Sign;
 import cat.nyaa.HamsterEcoHelper.signshop.ShopMode;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -17,11 +19,10 @@ public class ExternalPluginUtils {
     private static HamsterEcoHelper heh = null;
 
     /**
-     *
      * @param shopOwner
-     * @param buyer the player who wants to buy from this shop
+     * @param buyer        the player who wants to buy from this shop
      * @param fakeLocation
-     * @param shopId can be any string, stable identifiers are recommended.
+     * @param shopId       can be any string, stable identifiers are recommended.
      * @throws OperationNotSupportedException
      */
     public static void hehOpenPlayerShop(UUID shopOwner, Player buyer, Location fakeLocation, String shopId) throws OperationNotSupportedException {
@@ -39,11 +40,20 @@ public class ExternalPluginUtils {
         fakeSign.owner = shopOwner;
         fakeSign.shopMode = ShopMode.SELL; // shop SELL to player
         if (fakeLocation == null) fakeLocation = buyer.getLocation();
-        fakeSign.x = (long)fakeLocation.getBlockX();
-        fakeSign.y = (long)fakeLocation.getBlockY();
-        fakeSign.z = (long)fakeLocation.getBlockZ();
+        fakeSign.x = (long) fakeLocation.getBlockX();
+        fakeSign.y = (long) fakeLocation.getBlockY();
+        fakeSign.z = (long) fakeLocation.getBlockZ();
         fakeSign.world = fakeLocation.getWorld().getName();
 
         heh.signShopManager.openShopGUI(buyer, fakeSign, 1);
+    }
+
+    private static ProtocolManager pm = null;
+
+    public static ProtocolManager getPM() {
+        if (pm == null) {
+            pm = ProtocolLibrary.getProtocolManager();
+        }
+        return pm;
     }
 }

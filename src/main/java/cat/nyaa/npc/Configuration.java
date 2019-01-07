@@ -1,7 +1,7 @@
 package cat.nyaa.npc;
 
-import cat.nyaa.npc.persistance.NpcDataConfig;
-import cat.nyaa.npc.persistance.TradeDataConfig;
+import cat.nyaa.npc.persistence.NpcDataConfig;
+import cat.nyaa.npc.persistence.TradeDataConfig;
 import cat.nyaa.nyaacore.configuration.PluginConfigure;
 import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -21,6 +21,7 @@ public class Configuration extends PluginConfigure {
                 allowedEntityType.add(t.name());
             }
         }
+        allowedEntityType.add(EntityType.PLAYER.name());
     }
 
     @Override

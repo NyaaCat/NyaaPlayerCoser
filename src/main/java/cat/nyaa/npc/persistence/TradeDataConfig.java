@@ -1,4 +1,4 @@
-package cat.nyaa.npc.persistance;
+package cat.nyaa.npc.persistence;
 
 import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.nyaacore.configuration.FileConfigure;

@@ -1,4 +1,4 @@
-package cat.nyaa.npc.persistance;
+package cat.nyaa.npc.persistence;
 
 public enum NpcType {
     UNSPECIFIED,

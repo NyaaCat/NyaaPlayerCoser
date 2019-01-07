@@ -1,6 +1,6 @@
 package cat.nyaa.npc.events;
 
-import cat.nyaa.npc.persistance.NpcData;
+import cat.nyaa.npc.persistence.NpcData;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
@@ -11,6 +11,7 @@ import org.bukkit.event.HandlerList;
  */
 public class NpcUndefinedEvent extends Event {
     private static final HandlerList handlers = new HandlerList();
+
     public static HandlerList getHandlerList() {
         return handlers;
     }

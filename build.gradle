@@ -52,6 +52,10 @@ repositories {
         name 'sk89q'
         url 'http://maven.sk89q.com/artifactory/repo/'
     }
+
+    maven {
+        url "http://repo.dmulloy2.net/nexus/repository/public/"
+    }
 }
 
 dependencies {
@@ -67,6 +71,7 @@ dependencies {
         compileOnly('cat.nyaa:nyaacore:6.3-SNAPSHOT') { transitive = false }
         compileOnly('cat.nyaa:nyaautils:6.1-SNAPSHOT') { transitive = false }
     }
+    compileOnly group: "com.comphenix.protocol", name: "ProtocolLib", version: "4.4.0"
 
     // annotation processor
     compileOnly 'org.librazy:NyaaUtilsLangChecker:2.0-SNAPSHOT'

@@ -1,12 +1,12 @@
 package cat.nyaa.npc;
 
-import cat.nyaa.npc.persistance.DataImporter;
-import cat.nyaa.npc.persistance.NpcData;
-import cat.nyaa.npc.persistance.NpcType;
-import cat.nyaa.npc.persistance.TradeData;
+import cat.nyaa.npc.ephemeral.NPCBase;
+import cat.nyaa.npc.persistence.DataImporter;
+import cat.nyaa.npc.persistence.NpcData;
+import cat.nyaa.npc.persistence.NpcType;
+import cat.nyaa.npc.persistence.TradeData;
 import cat.nyaa.nyaacore.CommandReceiver;
 import cat.nyaa.nyaacore.utils.ClickSelectionUtils;
-import cat.nyaa.nyaacore.utils.NmsUtils;
 import cat.nyaa.nyaacore.utils.RayTraceUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -79,7 +79,7 @@ public class CommandHandler extends CommandReceiver {
             Player p = asPlayer(sender);
             double minAngle = Math.PI / 2D;
             for (Entity e : p.getNearbyEntities(3, 3, 3)) {
-                if (!EntitiesManager.isNyaaNPC(e)) continue;
+                if (!NPCBase.isNyaaNPC(e)) continue;
                 LivingEntity currentMobEntity = (LivingEntity) e;
                 Vector eyeSight = p.getEyeLocation().getDirection();
                 Vector mobVector = currentMobEntity.getEyeLocation().toVector().subtract(p.getEyeLocation().toVector());
@@ -87,7 +87,7 @@ public class CommandHandler extends CommandReceiver {
                 if (!Double.isFinite(angle)) continue;
                 if (angle >= minAngle) continue;
                 minAngle = angle;
-                npcId = EntitiesManager.getNyaaNpcId(e);
+                npcId = NPCBase.getNyaaNpcId(e);
             }
         }
         if (npcId == null) {
@@ -243,6 +243,13 @@ public class CommandHandler extends CommandReceiver {
         String npcId = args.nextString();
         asNpcData(npcId);
         plugin.entitiesManager.adjustNpcLocation(npcId, sender);
+    }
+
+    @SubCommand(value = "test")
+    public void testCmd(CommandSender sender, Arguments args) {
+        Player p = asPlayer(sender);
+        //DummyPlayer d = new DummyPlayer();
+        //plugin.dummyController.sendPlayerInfoList(d, p);
     }
 
     private Block getRayTraceBlock(CommandSender sender) {

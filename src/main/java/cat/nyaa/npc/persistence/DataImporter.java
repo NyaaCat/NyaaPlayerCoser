@@ -1,4 +1,4 @@
-package cat.nyaa.npc.persistance;
+package cat.nyaa.npc.persistence;
 
 import cat.nyaa.npc.NyaaPlayerCoser;
 import org.bukkit.Material;
@@ -27,11 +27,11 @@ public class DataImporter {
             ConfigurationSection npcSection = cfg.getConfigurationSection(npcIndex);
             try {
                 importShopkeeperNPC(plugin, npcSection);
-                imported ++;
+                imported++;
             } catch (Exception ex) {
-                skipped ++;
+                skipped++;
                 badCfg.set(npcIndex, npcSection);
-                sender.sendMessage("Failed to import No."+npcIndex+": " + ex.getMessage());
+                sender.sendMessage("Failed to import No." + npcIndex + ": " + ex.getMessage());
                 ex.printStackTrace();
             }
         }
@@ -51,9 +51,10 @@ public class DataImporter {
     }
 
     private static int skRecipeIndex = 0;
+
     private static final String importShopkeeperRecipe(NyaaPlayerCoser plugin, ConfigurationSection sec) {
         String idxName = "sk-" + skRecipeIndex;
-        while(plugin.cfg.tradeData.tradeList.containsKey(idxName)) {
+        while (plugin.cfg.tradeData.tradeList.containsKey(idxName)) {
             skRecipeIndex++;
             idxName = "sk-" + skRecipeIndex;
         }
@@ -63,19 +64,20 @@ public class DataImporter {
         ItemStack result = sec.getItemStack("resultItem", new ItemStack(Material.AIR));
         TradeData td = new TradeData(item1, item2, result);
         plugin.cfg.tradeData.tradeList.put(idxName, td);
-        skRecipeIndex ++;
+        skRecipeIndex++;
         return idxName;
     }
 
     private static int skNpcIndex = 0;
     public static final UUID DEFAULT_OWNER_ID_SHOPKEEPER = UUID.nameUUIDFromBytes("SHOPKEEPER_DEFAULT".getBytes(Charset.forName("UTF-8")));
+
     private static final String importShopkeeperNPC(NyaaPlayerCoser plugin, ConfigurationSection sec) {
-        if (!"admin".equals(sec.getString("type",""))) {
+        if (!"admin".equals(sec.getString("type", ""))) {
             throw new RuntimeException("type " + sec.getString("type", "[empt]") + " not supported");
         }
 
         String idxName = "sk-" + skNpcIndex;
-        while(plugin.cfg.npcData.npcList.containsKey(idxName)) {
+        while (plugin.cfg.npcData.npcList.containsKey(idxName)) {
             skNpcIndex++;
             idxName = "sk-" + skNpcIndex;
         }
@@ -88,9 +90,9 @@ public class DataImporter {
         }
         npc.worldName = sec.getString("world");
         if (!"world".equals(npc.worldName)) throw new RuntimeException("npc not in main world: " + npc.worldName);
-        npc.x = sec.getInt("x")+0.5;
-        npc.y = sec.getInt("y")+0.0;
-        npc.z = sec.getInt("z")+0.5;
+        npc.x = sec.getInt("x") + 0.5;
+        npc.y = sec.getInt("y") + 0.0;
+        npc.z = sec.getInt("z") + 0.5;
         npc.displayName = sec.getString("name", "");
         npc.nbtTag = assembleShopkeeperNbt(sec);
         npc.type = EntityType.fromName(sec.getString("object"));
@@ -101,12 +103,12 @@ public class DataImporter {
 
         if (sec.contains("recipes")) {
             for (String recIndex : sec.getConfigurationSection("recipes").getKeys(false)) {
-                npc.trades.add(importShopkeeperRecipe(plugin, sec.getConfigurationSection("recipes."+recIndex)));
+                npc.trades.add(importShopkeeperRecipe(plugin, sec.getConfigurationSection("recipes." + recIndex)));
             }
         }
 
         plugin.cfg.npcData.npcList.put(idxName, npc);
-        skNpcIndex ++;
+        skNpcIndex++;
         return idxName;
     }
 

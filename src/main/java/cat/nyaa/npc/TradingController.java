@@ -1,10 +1,11 @@
 package cat.nyaa.npc;
 
+import cat.nyaa.npc.ephemeral.NPCBase;
 import cat.nyaa.npc.events.NpcRedefinedEvent;
 import cat.nyaa.npc.events.NpcUndefinedEvent;
-import cat.nyaa.npc.persistance.NpcData;
-import cat.nyaa.npc.persistance.NpcType;
-import cat.nyaa.npc.persistance.TradeData;
+import cat.nyaa.npc.persistence.NpcData;
+import cat.nyaa.npc.persistence.NpcType;
+import cat.nyaa.npc.persistence.TradeData;
 import cat.nyaa.nyaacore.Pair;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
@@ -17,7 +18,10 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.*;
+import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.Merchant;
+import org.bukkit.inventory.MerchantInventory;
+import org.bukkit.inventory.MerchantRecipe;
 
 import java.util.*;
 
@@ -82,7 +86,7 @@ public class TradingController implements Listener {
     }
 
     private Pair<String, UUID> _closeView(InventoryView view) {
-        for (Iterator<StructInProgressTrading> iter = _nmp_db.iterator(); iter.hasNext();) {
+        for (Iterator<StructInProgressTrading> iter = _nmp_db.iterator(); iter.hasNext(); ) {
             StructInProgressTrading t = iter.next();
             if (t.inventoryView == view) {
                 _deleteMerchant(t.merchant);
@@ -95,7 +99,7 @@ public class TradingController implements Listener {
 
     private List<UUID> haltNpcTradings(String npcId) {
         List<UUID> affectedPlayers = new LinkedList<>();
-        for (Iterator<StructInProgressTrading> iter = _nmp_db.iterator(); iter.hasNext();) {
+        for (Iterator<StructInProgressTrading> iter = _nmp_db.iterator(); iter.hasNext(); ) {
             StructInProgressTrading t = iter.next();
             if (t.npcId.equals(npcId)) {
                 t.inventoryView.close();
@@ -109,7 +113,7 @@ public class TradingController implements Listener {
 
     private String haltPlayerTrading(UUID playerUUID) {
         String npcId = null;
-        for (Iterator<StructInProgressTrading> iter = _nmp_db.iterator(); iter.hasNext();) {
+        for (Iterator<StructInProgressTrading> iter = _nmp_db.iterator(); iter.hasNext(); ) {
             StructInProgressTrading t = iter.next();
             if (t.playerId.equals(playerUUID)) {
                 t.inventoryView.close();
@@ -128,6 +132,7 @@ public class TradingController implements Listener {
     /*               Merchants                */
     /* ************************************** */
     private final Map<Merchant, List<String>> _merchant_recipes = new HashMap<>();
+
     private Merchant _newMerchant(NpcData npc) {
         if (npc.npcType != NpcType.TRADER_UNLIMITED && npc.npcType != NpcType.TRADER_BOX)
             throw new IllegalStateException("this method is meaningless for a non-trader");
@@ -159,16 +164,15 @@ public class TradingController implements Listener {
     }
 
 
-
     /* ************************************** */
     /*             player events              */
     /* ************************************** */
     @EventHandler(ignoreCancelled = true)
     public void onPlayerInteractNPC(PlayerInteractEntityEvent ev) {
         if (_getByUser(ev.getPlayer().getUniqueId()) != null) return; // TODO msg to user
-        if (EntitiesManager.isNyaaNPC(ev.getRightClicked())) {
+        if (NPCBase.isNyaaNPC(ev.getRightClicked())) {
             ev.setCancelled(true);
-            String npcId = EntitiesManager.getNyaaNpcId(ev.getRightClicked());
+            String npcId = NPCBase.getNyaaNpcId(ev.getRightClicked());
             final NpcData npcData = plugin.cfg.npcData.npcList.get(npcId);
 
             if (npcData.npcType == NpcType.TRADER_BOX || npcData.npcType == NpcType.TRADER_UNLIMITED) {
@@ -186,7 +190,7 @@ public class TradingController implements Listener {
                 }
             } else if (npcData.npcType == NpcType.HEH_SELL_SHOP) {
                 try {
-                    ExternalPluginUtils.hehOpenPlayerShop(npcData.ownerId, ev.getPlayer(), ev.getRightClicked().getLocation(), "npc-"+npcId);
+                    ExternalPluginUtils.hehOpenPlayerShop(npcData.ownerId, ev.getPlayer(), ev.getRightClicked().getLocation(), "npc-" + npcId);
                 } catch (ExternalPluginUtils.OperationNotSupportedException ex) {
                     ev.getPlayer().sendMessage(I18n.format("user.interact.heh_not_support"));
                 }
@@ -233,10 +237,10 @@ public class TradingController implements Listener {
             MerchantInventory inv = (MerchantInventory) ev.getClickedInventory();
             if (data.npcType == NpcType.TRADER_UNLIMITED) {
                 TradeData td = _merchantIndex(t.merchant, inv.getSelectedRecipeIndex());
-                ev.getWhoClicked().sendMessage(""+inv.getSelectedRecipeIndex());
-                ev.getWhoClicked().sendMessage(""+inv.getItem(0));
-                ev.getWhoClicked().sendMessage(""+inv.getItem(1));
-                ev.getWhoClicked().sendMessage(""+inv.getItem(2));
+                ev.getWhoClicked().sendMessage("" + inv.getSelectedRecipeIndex());
+                ev.getWhoClicked().sendMessage("" + inv.getItem(0));
+                ev.getWhoClicked().sendMessage("" + inv.getItem(1));
+                ev.getWhoClicked().sendMessage("" + inv.getItem(2));
                 if (td.allowedTradeCount(inv.getItem(0), inv.getItem(1)) <= 0) ev.setResult(Event.Result.DENY);
             } else {
                 ev.getWhoClicked().sendMessage(I18n.format("user.interact.type_not_support", data.npcType));

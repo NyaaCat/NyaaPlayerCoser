@@ -1,18 +1,14 @@
-package cat.nyaa.npc.persistance;
+package cat.nyaa.npc.persistence;
 
-import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.nyaacore.configuration.ISerializable;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
-import org.bukkit.inventory.Merchant;
-import org.bukkit.inventory.MerchantRecipe;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class NpcData implements ISerializable, Cloneable {
@@ -20,7 +16,7 @@ public class NpcData implements ISerializable, Cloneable {
     }
 
     public NpcData(UUID ownerId, Location loc, String displayName, EntityType type, String nbtTag) {
-        if (!type.isAlive() || !type.isSpawnable()) throw new IllegalArgumentException();
+        if ((!type.isAlive() || !type.isSpawnable()) && type != EntityType.PLAYER) throw new IllegalArgumentException();
         this.ownerId = ownerId;
         this.worldName = loc.getWorld().getName();
         this.x = loc.getX();
@@ -100,7 +96,7 @@ public class NpcData implements ISerializable, Cloneable {
 
     @Override
     protected Object clone() throws CloneNotSupportedException {
-        NpcData cloned = (NpcData)(super.clone());
+        NpcData cloned = (NpcData) (super.clone());
         // TODO: deep clone
         return cloned;
     }
