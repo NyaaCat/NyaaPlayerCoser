@@ -30,7 +30,7 @@ permissions:
 
   npc.player:
     description: Permissions for players
-    default: true
+    default: op
     children:
       npc.player.spawn: true
       npc.player.remove: true
