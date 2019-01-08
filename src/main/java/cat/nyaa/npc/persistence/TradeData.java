@@ -2,7 +2,6 @@ package cat.nyaa.npc.persistence;
 
 import cat.nyaa.nyaacore.configuration.ISerializable;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.MerchantRecipe;
 
 import static org.bukkit.Material.AIR;
 
@@ -34,23 +33,12 @@ public class TradeData implements ISerializable {
     @Serializable
     public ItemStack result;
 
-    /**
-     * Get a MerchantRecipe can be used for trading
-     */
-    public MerchantRecipe getRecipe() {
-        MerchantRecipe mr = new MerchantRecipe(result, Integer.MAX_VALUE);
-        mr.addIngredient(item1.clone());
-        if (item2.getType() != AIR)
-            mr.addIngredient(item2.clone());
-        return mr;
-    }
-
     private boolean exactMatch(ItemStack s1, ItemStack s2) {
         ItemStack d1 = s1 == null ? new ItemStack(AIR) : s1.clone();
         ItemStack d2 = s2 == null ? new ItemStack(AIR) : s2.clone();
         d1.setAmount(1);
         d2.setAmount(1);
-        return d1.equals(s2);
+        return d1.equals(d2);
     }
 
     /**

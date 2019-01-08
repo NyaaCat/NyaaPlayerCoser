@@ -20,6 +20,7 @@ import java.util.*;
 
 public class NPCPlayer extends NPCBase {
     private static final SecureRandom rnd = new SecureRandom();
+    public static final Map<Integer, NPCPlayer> spawnedDummyNPCs = new HashMap<>(); // map<entityId, NpcPlayer>
 
     public static UUID getVersion2UUID() {
         return getVersion2UUID(null);
@@ -60,7 +61,7 @@ public class NPCPlayer extends NPCBase {
 
     private Location loc;
     private boolean spawned = false;
-    private int entityId = 1000000;
+    private Integer entityId = null;
     private Set<Player> inRangePlayers = new HashSet<>();
     private byte pitch = 0;
     private byte yaw = 0;
@@ -145,6 +146,8 @@ public class NPCPlayer extends NPCBase {
         } catch (ReflectiveOperationException ex) {
             throw new RuntimeException(ex);
         } finally {
+            spawnedDummyNPCs.remove(entityId);
+            entityId = null;
             inRangePlayers.clear();
             spawned = false;
         }
@@ -154,12 +157,13 @@ public class NPCPlayer extends NPCBase {
     public void spawn() {
         spawned = true;
         entityId = rnd.nextInt(); // FIXME: potential duplicated entityId
+        spawnedDummyNPCs.put(entityId, this);
     }
 
     @Override
     public void setPitchYaw(Float pitch, Float yaw) {
-        if (pitch != null) this.pitch = (byte)(pitch / 360.0 * 256);
-        if (yaw != null) this.yaw = (byte)(yaw / 360.0 * 256);
+        if (pitch != null) this.pitch = (byte) (pitch / 360.0 * 256);
+        if (yaw != null) this.yaw = (byte) (yaw / 360.0 * 256);
         PacketContainer pktEntityLook = ExternalPluginUtils.getPM()
                 .createPacketConstructor(PacketType.Play.Server.REL_ENTITY_MOVE_LOOK, int.class, long.class, long.class, long.class, byte.class, byte.class, boolean.class)
                 .createPacket(entityId, 0L, 0L, 0L, this.yaw, this.pitch, true);

@@ -61,6 +61,7 @@ repositories {
 dependencies {
     // spigot
     compileOnly 'org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT'
+    compileOnly files('lib/spigot-1.13.2.jar')    // for NMS
 
     // other plugins
     if (gradle.hasProperty("useLocalDependencies") && gradle.useLocalDependencies) {

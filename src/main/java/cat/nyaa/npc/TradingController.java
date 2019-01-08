@@ -1,13 +1,21 @@
 package cat.nyaa.npc;
 
 import cat.nyaa.npc.ephemeral.NPCBase;
+import cat.nyaa.npc.ephemeral.NPCPlayer;
+import cat.nyaa.npc.ephemeral.NyaaMerchant;
+import cat.nyaa.npc.ephemeral.NyaaMerchantRecipe;
 import cat.nyaa.npc.events.NpcRedefinedEvent;
 import cat.nyaa.npc.events.NpcUndefinedEvent;
 import cat.nyaa.npc.persistence.NpcData;
-import cat.nyaa.npc.persistence.NpcType;
 import cat.nyaa.npc.persistence.TradeData;
-import cat.nyaa.nyaacore.Pair;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.events.PacketListener;
+import net.minecraft.server.v1_13_R2.EnumHand;
+import net.minecraft.server.v1_13_R2.PacketPlayInUseEntity;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,29 +26,20 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
-import org.bukkit.inventory.Merchant;
 import org.bukkit.inventory.MerchantInventory;
-import org.bukkit.inventory.MerchantRecipe;
 
 import java.util.*;
+import java.util.logging.Level;
+
+import static cat.nyaa.npc.persistence.NpcType.TRADER_BOX;
+import static cat.nyaa.npc.persistence.NpcType.TRADER_UNLIMITED;
+import static com.comphenix.protocol.PacketType.Play.Client.USE_ENTITY;
+import static org.bukkit.event.inventory.InventoryType.CRAFTING;
+import static org.bukkit.event.inventory.InventoryType.CREATIVE;
 
 public class TradingController implements Listener {
-    private static class StructInProgressTrading {
-        final String npcId;
-        final InventoryView inventoryView;
-        final UUID playerId;
-        final Merchant merchant;
-
-        public StructInProgressTrading(String npcId, InventoryView inventoryView, UUID playerId, Merchant merchant) {
-            if (npcId == null || inventoryView == null || playerId == null || merchant == null)
-                throw new IllegalArgumentException();
-            this.npcId = npcId;
-            this.inventoryView = inventoryView;
-            this.playerId = playerId;
-            this.merchant = merchant;
-        }
-    }
 
     private final NyaaPlayerCoser plugin;
 
@@ -52,224 +51,273 @@ public class TradingController implements Listener {
     public TradingController(NyaaPlayerCoser plugin) {
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
+        ExternalPluginUtils.getPM().addPacketListener(onRightClickFakePlayer);
     }
 
     public void destructor() {
-        for (StructInProgressTrading t : _nmp_db) {
-            t.inventoryView.close();
-        }
-        _nmp_db.clear();
-        _merchant_recipes.clear();
-    }
-
-    /* ************************************** */
-    /* NPC-MerchantView-Player relation logic */
-    /* ************************************** */
-    private final List<StructInProgressTrading> _nmp_db = new LinkedList<>();
-
-    private StructInProgressTrading _getByUser(UUID uuid) {
-        for (StructInProgressTrading t : _nmp_db) {
-            if (t.playerId.equals(uuid)) return t;
-        }
-        return null;
-    }
-
-    private StructInProgressTrading _getByInv(InventoryView iv) {
-        for (StructInProgressTrading t : _nmp_db) {
-            if (t.inventoryView == iv) return t;
-        }
-        return null;
-    }
-
-    private void _newView(String npcId, InventoryView view, UUID playerUUID, Merchant merchant) {
-        _nmp_db.add(new StructInProgressTrading(npcId, view, playerUUID, merchant));
-    }
-
-    private Pair<String, UUID> _closeView(InventoryView view) {
-        for (Iterator<StructInProgressTrading> iter = _nmp_db.iterator(); iter.hasNext(); ) {
-            StructInProgressTrading t = iter.next();
-            if (t.inventoryView == view) {
-                _deleteMerchant(t.merchant);
-                iter.remove();
-                return Pair.of(t.npcId, t.playerId);
+        ExternalPluginUtils.getPM().removePacketListener(onRightClickFakePlayer);
+        for (Set<NyaaMerchant> s : activeMerchants.values()) {
+            if (s == null) continue;
+            for (NyaaMerchant m : s) {
+                NyaaMerchant.removeLookup(m.lookupView().getTopInventory());
             }
         }
-        return null;
-    }
-
-    private List<UUID> haltNpcTradings(String npcId) {
-        List<UUID> affectedPlayers = new LinkedList<>();
-        for (Iterator<StructInProgressTrading> iter = _nmp_db.iterator(); iter.hasNext(); ) {
-            StructInProgressTrading t = iter.next();
-            if (t.npcId.equals(npcId)) {
-                t.inventoryView.close();
-                _deleteMerchant(t.merchant);
-                affectedPlayers.add(t.playerId);
-                iter.remove();
-            }
-        }
-        return affectedPlayers;
-    }
-
-    private String haltPlayerTrading(UUID playerUUID) {
-        String npcId = null;
-        for (Iterator<StructInProgressTrading> iter = _nmp_db.iterator(); iter.hasNext(); ) {
-            StructInProgressTrading t = iter.next();
-            if (t.playerId.equals(playerUUID)) {
-                t.inventoryView.close();
-                _deleteMerchant(t.merchant);
-                iter.remove();
-                if (npcId != null) {
-                    plugin.getLogger().warning(String.format("unexpected concurrent trading: %s with %s and %s", t.playerId.toString(), npcId, t.npcId));
-                }
-                npcId = t.npcId;
-            }
-        }
-        return npcId;
     }
 
     /* ************************************** */
-    /*               Merchants                */
+    /*        inventory view events           */
     /* ************************************** */
-    private final Map<Merchant, List<String>> _merchant_recipes = new HashMap<>();
 
-    private Merchant _newMerchant(NpcData npc) {
-        if (npc.npcType != NpcType.TRADER_UNLIMITED && npc.npcType != NpcType.TRADER_BOX)
-            throw new IllegalStateException("this method is meaningless for a non-trader");
-        Merchant merchant = Bukkit.createMerchant(npc.displayName);
+    private final Map<String, Set<NyaaMerchant>> activeMerchants = new HashMap<>(); // npcid->merchant
+    // NOTE states are also maintained in NyaaMerchant.merchantLookupMap
 
-        List<String> index_mapping = new ArrayList<>(npc.trades.size());
-        List<MerchantRecipe> recipes = new ArrayList<>();
-        Map<String, TradeData> tradeList = plugin.cfg.tradeData.tradeList;
-        for (String i : npc.trades) {
-            // TODO warn
-            if (tradeList.containsKey(i)) {
-                recipes.add(tradeList.get(i).getRecipe());
-                index_mapping.add(i);
-            }
-        }
-        merchant.setRecipes(recipes);
-        _merchant_recipes.put(merchant, index_mapping);
-        return merchant;
-    }
-
-    private void _deleteMerchant(Merchant m) {
-        _merchant_recipes.remove(m);
-    }
-
-    private TradeData _merchantIndex(Merchant m, int idx) {
-        List<String> s = _merchant_recipes.get(m);
-        if (s == null || s.size() <= idx) return null;
-        return plugin.cfg.tradeData.tradeList.get(s.get(idx));
-    }
-
-
-    /* ************************************** */
-    /*             player events              */
-    /* ************************************** */
     @EventHandler(ignoreCancelled = true)
     public void onPlayerInteractNPC(PlayerInteractEntityEvent ev) {
-        if (_getByUser(ev.getPlayer().getUniqueId()) != null) return; // TODO msg to user
-        if (NPCBase.isNyaaNPC(ev.getRightClicked())) {
-            ev.setCancelled(true);
-            String npcId = NPCBase.getNyaaNpcId(ev.getRightClicked());
-            final NpcData npcData = plugin.cfg.npcData.npcList.get(npcId);
+        Player p = ev.getPlayer();
 
-            if (npcData.npcType == NpcType.TRADER_BOX || npcData.npcType == NpcType.TRADER_UNLIMITED) {
-                if (npcData.trades.size() <= 0) {
-                    ev.getPlayer().sendMessage(I18n.format("user.interact.not_ready"));
-                    return;
-                }
-                Merchant m = _newMerchant(npcData);
-                InventoryView iv = ev.getPlayer().openMerchant(m, false);
-                if (iv != null) {
-                    _newView(npcId, iv, ev.getPlayer().getUniqueId(), m);
+        InventoryType currentInvType = p.getOpenInventory().getType();
+        if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
+            return; // skip if the player has another inventory opened
+        }
+
+        String npcId = NPCBase.getNyaaNpcId(ev.getRightClicked());
+        if (npcId == null) {
+            return; // skip if not a nyaa npc
+        }
+
+        activateNpcForPlayer(npcId, ev.getPlayer());
+        ev.setCancelled(true);
+    }
+
+    private void activateNpcForPlayer(String npcId, Player p) {
+        NpcData data = plugin.cfg.npcData.npcList.get(npcId);
+        if (data == null) {
+            plugin.getLogger().warning(String.format("Cannot activate npc %s for player %s : Cannot find NPC definition", npcId, p.getName()));
+            return;
+        }
+
+        switch (data.npcType) {
+            case UNSPECIFIED: {
+                p.sendMessage(I18n.format("user.interact.not_ready"));
+                break;
+            }
+            case TRADER_BOX: {
+                p.sendMessage(I18n.format("user.interact.type_not_support", TRADER_BOX)); // TODO
+                break;
+            }
+            case TRADER_UNLIMITED: {
+                if (data.trades.size() <= 0) {
+                    p.sendMessage(I18n.format("user.interact.not_ready"));
                 } else {
-                    _deleteMerchant(m);
-                    ev.getPlayer().sendMessage(I18n.format("user.interact.open_merchant_fail"));
+                    NyaaMerchant ephemeralMerchant = new NyaaMerchant(npcId, data);
+                    InventoryView vi = p.openMerchant(ephemeralMerchant, false);
+                    if (vi == null) {
+                        p.sendMessage(I18n.format("user.interact.open_merchant_fail"));
+                    } else {
+                        ephemeralMerchant.registerLookup(vi);
+                        if (!activeMerchants.containsKey(npcId)) {
+                            activeMerchants.put(npcId, new HashSet<>());
+                        }
+                        activeMerchants.get(npcId).add(ephemeralMerchant);
+                    }
                 }
-            } else if (npcData.npcType == NpcType.HEH_SELL_SHOP) {
+                break;
+            }
+            case HEH_SELL_SHOP: {
                 try {
-                    ExternalPluginUtils.hehOpenPlayerShop(npcData.ownerId, ev.getPlayer(), ev.getRightClicked().getLocation(), "npc-" + npcId);
+                    ExternalPluginUtils.hehOpenPlayerShop(data.ownerId, p, p.getLocation(), "npc-" + npcId);
                 } catch (ExternalPluginUtils.OperationNotSupportedException ex) {
-                    ev.getPlayer().sendMessage(I18n.format("user.interact.heh_not_support"));
+                    p.sendMessage(I18n.format("user.interact.heh_not_support"));
                 }
-            } else {
-                ev.getPlayer().sendMessage(I18n.format("user.interact.type_not_support", npcData.npcType));
+                break;
+            }
+            default: {
+                p.sendMessage(I18n.format("user.interact.type_not_support", data.npcType));
+            }
+        }
+    }
+
+    private void deactivateNpcViews(String npcId) {
+        for (NyaaMerchant merchant : activeMerchants.getOrDefault(npcId, Collections.emptySet())) {
+            Inventory registeredInventory = merchant.lookupView().getTopInventory();
+
+            if (merchant.getTrader() instanceof Player) { // close player view only if opened view == registered view
+                Player p = (Player) merchant.getTrader();
+                if (p.getOpenInventory().getTopInventory() == registeredInventory) {
+                    p.closeInventory();
+                }
+            }
+
+            NyaaMerchant.removeLookup(registeredInventory);
+        }
+        activeMerchants.remove(npcId);
+    }
+
+    private void deactivateNpcViewForPlayer(Player p) {
+        NyaaMerchant m = NyaaMerchant.removeLookup(p.getOpenInventory().getTopInventory());
+        if (m != null) {
+            String npcId = m.getNpcId();
+            if (activeMerchants.get(npcId) != null) {
+                activeMerchants.get(npcId).remove(m);
             }
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerCloseWindow(InventoryCloseEvent ev) {
-        _closeView(ev.getView());
+        NyaaMerchant m = NyaaMerchant.removeLookup(ev.getInventory());
+        if (m != null) {
+            String npcId = m.getNpcId();
+            if (activeMerchants.get(npcId) != null) {
+                activeMerchants.get(npcId).remove(m);
+            }
+        }
     }
 
     @EventHandler
     public void onNpcUndefined(NpcUndefinedEvent ev) {
-        haltNpcTradings(ev.getNpcId());
+        deactivateNpcViews(ev.getNpcId());
     }
 
     @EventHandler
     public void onNpcModified(NpcRedefinedEvent ev) {
-        haltNpcTradings(ev.getNpcId());
+        deactivateNpcViews(ev.getNpcId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLeave(PlayerQuitEvent ev) {
-        haltPlayerTrading(ev.getPlayer().getUniqueId());
+        deactivateNpcViewForPlayer(ev.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLeave(PlayerKickEvent ev) {
-        haltPlayerTrading(ev.getPlayer().getUniqueId());
+        deactivateNpcViewForPlayer(ev.getPlayer());
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerInteractWithWindow(InventoryClickEvent ev) {
-        final StructInProgressTrading t = _getByUser(ev.getWhoClicked().getUniqueId());
-        if (t == null) return;
-        NpcData data = plugin.cfg.npcData.npcList.get(t.npcId);
+        NyaaMerchant m = NyaaMerchant.lookupMerchant(ev.getInventory());
+        if (m == null) return;
 
-        if (data != null && (data.npcType == NpcType.TRADER_BOX || data.npcType == NpcType.TRADER_UNLIMITED) &&
-                ev.getClickedInventory() instanceof MerchantInventory && ev.getView() == t.inventoryView &&
-                ev.getSlotType() == InventoryType.SlotType.RESULT) {
-            MerchantInventory inv = (MerchantInventory) ev.getClickedInventory();
-            if (data.npcType == NpcType.TRADER_UNLIMITED) {
-                TradeData td = _merchantIndex(t.merchant, inv.getSelectedRecipeIndex());
-                ev.getWhoClicked().sendMessage("" + inv.getSelectedRecipeIndex());
-                ev.getWhoClicked().sendMessage("" + inv.getItem(0));
-                ev.getWhoClicked().sendMessage("" + inv.getItem(1));
-                ev.getWhoClicked().sendMessage("" + inv.getItem(2));
-                if (td.allowedTradeCount(inv.getItem(0), inv.getItem(1)) <= 0) ev.setResult(Event.Result.DENY);
-            } else {
-                ev.getWhoClicked().sendMessage(I18n.format("user.interact.type_not_support", data.npcType));
-                ev.setResult(Event.Result.DENY);
+        NpcData data = m.getNpcData();
+        if (data == null) return;
+
+        if (data.npcType == TRADER_UNLIMITED) {
+            if (ev.getClickedInventory() instanceof MerchantInventory && ev.getSlotType() == InventoryType.SlotType.RESULT) {
+                // player try to fetch the result item
+                MerchantInventory mInv = (MerchantInventory) ev.getClickedInventory();
+                if (mInv.getSelectedRecipe() instanceof NyaaMerchantRecipe) {
+                    NyaaMerchantRecipe indexRecipe;
+                    try {
+                        indexRecipe = (NyaaMerchantRecipe) m.getRecipe(mInv.getSelectedRecipeIndex());
+                        //NyaaMerchantRecipe usedRecipe = (NyaaMerchantRecipe) mInv.getSelectedRecipe();
+                    } catch (NullPointerException ex) {
+                        plugin.getLogger().log(Level.WARNING, "Error acquiring Merchant Recipe at index: " + Integer.toString(mInv.getSelectedRecipeIndex()), ex);
+                        ev.getWhoClicked().sendMessage("Internal Error: please report this bug");
+                        ev.setResult(Event.Result.DENY);
+                        return;
+                    }
+
+                    TradeData d = indexRecipe.getTradeData();
+
+                    if (d.allowedTradeCount(mInv.getItem(0), mInv.getItem(1)) <= 0) {
+                        ev.setResult(Event.Result.DENY); // mismatch item, deny exchange
+                        ev.setCancelled(true);           // FIXME: same
+                    }
+                } else {
+                    return; // not nyaanpc recipe
+                }
             }
+        } else {
+            return;
         }
-
-        ev.getWhoClicked().sendMessage("Clicked inv:" + ev.getClickedInventory());
-        ev.getWhoClicked().sendMessage("Clicked view:" + ev.getView().toString());
-        ev.getWhoClicked().sendMessage("NPCID:" + t.npcId);
-        ev.getWhoClicked().sendMessage("InvView:" + t.inventoryView);
-        ev.getWhoClicked().sendMessage("UUID:" + t.playerId);
-
-        ev.getWhoClicked().sendMessage("DUMP:" +
-                ev.getWhoClicked() + " " +
-                ev.getCurrentItem() + " " +
-                ev.getCursor() + " " +
-                ev.getClick() + " " +
-                ev.getAction() + " " +
-                ev.getEventName() + " " +
-                ev.getHotbarButton() + " " +
-                ev.getRawSlot() + " " +
-                ev.getSlot() + " " +
-                ev.getSlotType() + " " +
-                ev.getResult() + " " +
-                ev.isLeftClick() + " " +
-                ev.isRightClick() + " " +
-                ev.isShiftClick());
     }
 
+//        if (ev.getView() == t.inventoryView) {
+//            MerchantInventory inv = (MerchantInventory) ev.getClickedInventory();
+//            ev.getWhoClicked().sendMessage("" + inv.getSelectedRecipeIndex());
+//            ev.getWhoClicked().sendMessage("" + inv.getItem(0));
+//            ev.getWhoClicked().sendMessage("" + inv.getItem(1));
+//            ev.getWhoClicked().sendMessage("" + inv.getItem(2));
+//        }
+
+//        if (data != null && (data.npcType == TRADER_BOX || data.npcType == NpcType.TRADER_UNLIMITED) &&
+//                ev.getClickedInventory() instanceof MerchantInventory && ev.getView() == t.inventoryView &&
+//                ev.getSlotType() == InventoryType.SlotType.RESULT) {
+//            MerchantInventory inv = (MerchantInventory) ev.getClickedInventory();
+//
+//            if (data.npcType == NpcType.TRADER_UNLIMITED) {
+//                TradeData td = _merchantIndex(t.merchant, inv.getSelectedRecipeIndex());
+//                ev.getWhoClicked().sendMessage("" + inv.getSelectedRecipeIndex());
+//                ev.getWhoClicked().sendMessage("" + inv.getItem(0));
+//                ev.getWhoClicked().sendMessage("" + inv.getItem(1));
+//                ev.getWhoClicked().sendMessage("" + inv.getItem(2));
+//                if (td.allowedTradeCount(inv.getItem(0), inv.getItem(1)) <= 0) ev.setResult(Event.Result.DENY);
+//            } else {
+//                ev.getWhoClicked().sendMessage(I18n.format("user.interact.type_not_support", data.npcType));
+//                ev.setResult(Event.Result.DENY);
+//            }
+//        }
+//
+//        ev.getWhoClicked().sendMessage("Clicked inv:" + ev.getClickedInventory());
+//        ev.getWhoClicked().sendMessage("Clicked view:" + ev.getView().toString());
+//        ev.getWhoClicked().sendMessage("NPCID:" + t.npcId);
+//        ev.getWhoClicked().sendMessage("InvView:" + t.inventoryView);
+//        ev.getWhoClicked().sendMessage("UUID:" + t.playerId);
+//
+//        ev.getWhoClicked().sendMessage("DUMP:" +
+//                ev.getWhoClicked() + " " +
+//                ev.getCurrentItem() + " " +
+//                ev.getCursor() + " " +
+//                ev.getClick() + " " +
+//                ev.getAction() + " " +
+//                ev.getEventName() + " " +
+//                ev.getHotbarButton() + " " +
+//                ev.getRawSlot() + " " +
+//                ev.getSlot() + " " +
+//                ev.getSlotType() + " " +
+//                ev.getResult() + " " +
+//                ev.isLeftClick() + " " +
+//                ev.isRightClick() + " " +
+//                ev.isShiftClick());
+
+
     // TODO: chest inventory
+
+
+    private final PacketListener onRightClickFakePlayer = new PacketAdapter(NyaaPlayerCoser.instance, ListenerPriority.NORMAL,
+            USE_ENTITY) {
+        @Override
+        public void onPacketReceiving(PacketEvent event) {
+            if (event.getPacketType() == USE_ENTITY) {
+                int entityId = event.getPacket().getIntegers().read(0);
+
+                NPCPlayer dummyNpc = NPCPlayer.spawnedDummyNPCs.get(entityId);
+                if (dummyNpc != null) {
+                    event.setCancelled(true);
+                    PacketPlayInUseEntity.EnumEntityUseAction action = event.getPacket().getEnumModifier(PacketPlayInUseEntity.EnumEntityUseAction.class, 1).read(0);
+                    EnumHand hand = event.getPacket().getEnumModifier(EnumHand.class, 3).read(0);
+
+                    if (action == PacketPlayInUseEntity.EnumEntityUseAction.INTERACT && hand == EnumHand.MAIN_HAND) {
+                        Player p = event.getPlayer();
+                        InventoryType currentInvType = p.getOpenInventory().getType();
+                        if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
+                            return; // skip if the player has another inventory opened
+                        }
+
+                        if (p.getLocation().getWorld() != dummyNpc.getEyeLocation().getWorld()) return;
+                        if (p.getLocation().distanceSquared(dummyNpc.getEyeLocation()) > 36)
+                            return; // skip if too far away from npc
+
+                        activateNpcForPlayer(dummyNpc.id, p);
+                    }
+                }
+
+                PacketPlayInUseEntity.EnumEntityUseAction action = event.getPacket().getEnumModifier(PacketPlayInUseEntity.EnumEntityUseAction.class, 1).read(0);
+                org.bukkit.util.Vector vec = event.getPacket().getVectors().read(0);
+                EnumHand hand = event.getPacket().getEnumModifier(EnumHand.class, 3).read(0);
+                event.getPlayer().sendMessage(String.format("entityid=%d, action=%s, vec=%s, hand=%s", entityId, action.name(), vec == null ? "null" : vec.toString(), hand.name()));
+            }
+        }
+    };
 }
