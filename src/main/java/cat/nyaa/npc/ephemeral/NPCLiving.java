@@ -8,6 +8,7 @@ import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
@@ -72,6 +73,11 @@ public class NPCLiving extends NPCBase {
 
     @Override
     public void setPitchYaw(Float pitch, Float yaw) {
+        if (data.type == EntityType.PHANTOM) {
+            if (pitch != null) {
+                pitch = -pitch;
+            }
+        }
         if (spawnedEntity != null) {
             NmsUtils.updateEntityYawPitch(spawnedEntity, yaw, pitch);
         }
@@ -84,5 +90,36 @@ public class NPCLiving extends NPCBase {
         } else {
             return null;
         }
+    }
+
+    @Override
+    public Entity getUnderlyingSpawnedEntity() {
+        return spawnedEntity;
+    }
+
+    @Override
+    public void resetLocation() {
+        if (spawnedEntity != null) {
+            if (spawnedEntity.isInsideVehicle()) spawnedEntity.leaveVehicle();
+            Location loc = spawnedEntity.getLocation();
+            Location definedLoc = data.getEntityLocation();
+            double deltaX = loc.getX() - definedLoc.getX();
+            double deltaY = loc.getY() - definedLoc.getY();
+            double deltaZ = loc.getZ() - definedLoc.getZ();
+
+            if (!loc.getWorld().getName().equals(definedLoc.getWorld().getName()) || Math.abs(deltaY) > 2 || deltaX * deltaX + deltaZ * deltaZ > 0.1) {
+                spawnedEntity.teleport(definedLoc);
+            }
+        }
+    }
+
+    @Override
+    public boolean doSanityCheck() {
+        if (spawnedEntity != null) {
+            if (spawnedEntity.isDead()) return true;
+            if (spawnedEntity.getType() != data.type) return true;
+            spawnedEntity.setFireTicks(0);
+        }
+        return false;
     }
 }

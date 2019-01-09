@@ -188,8 +188,18 @@ public class NPCPlayer extends NPCBase {
         return loc.clone().add(0, 1.6, 0);
     }
 
-    private static void sendPacketUpdateDirection(Player p, int entityId, float yaw, float pitch) {
-        //PacketContainer pktEntityLook = ExternalPluginUtils.getPM().createPacket(PacketType.Play.Server.ENTITY_LOOK);
+    @Override
+    public Entity getUnderlyingSpawnedEntity() {
+        return null;
+    }
 
+    @Override
+    public void resetLocation() {
+
+    }
+
+    @Override
+    public boolean doSanityCheck() {
+        return false;
     }
 }

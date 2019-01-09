@@ -47,6 +47,10 @@ user:
     sampling_ok: "Sampling NPC location [x:%.2f, y:$.2f, z:$.2f]. Location match."
     success: "NPC location updated. New location [x:%.2f, y:$.2f, z:$.2f]"
     fail: "NPC changes its location too frequently, cannot determine the stable location."
+  inspect:
+    invalid_command: "Invalid type to be inspected: %s"
+    trade:
+      no_trade: "Trade `%s` not found."
 
 manual:
   help:
@@ -59,7 +63,7 @@ manual:
     description: Define new NPC, will be placed at cursor
     usage: /npc spawn <NpcType> <NpcName> [EntitydataTag]
   info:
-    description: Show NPC info, by id or by cursor position
+    description: Show NPC info, by id or by cursor position [deprecated]
     usage: /npc info [npcId]
   remove:
     description: Remove NPC by ID
@@ -82,3 +86,6 @@ manual:
   adjust_location:
     description: Automatically adjust NPC location.
     usage: /npc adjust_location <npcId>
+  inspect:
+    description: Inspect NPC or trade definitions.
+    usage: /npc inspect <trade|npc> [id]

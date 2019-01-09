@@ -7,21 +7,27 @@ import cat.nyaa.npc.persistence.NpcType;
 import cat.nyaa.npc.persistence.TradeData;
 import cat.nyaa.nyaacore.CommandReceiver;
 import cat.nyaa.nyaacore.utils.ClickSelectionUtils;
+import cat.nyaa.nyaacore.utils.ItemStackUtils;
 import cat.nyaa.nyaacore.utils.RayTraceUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
+import java.io.File;
 import java.util.Map;
 import java.util.UUID;
 
@@ -106,6 +112,28 @@ public class CommandHandler extends CommandReceiver {
             }
         } else {
             msg(sender, "user.info.msg_no_trade");
+        }
+    }
+
+    @SubCommand(value = "inspect", permission = "npc.admin.inspect")
+    public void inspectData(CommandSender sender, Arguments args) {
+        String type = args.nextString();
+        String id = args.nextString();
+        if (type.equalsIgnoreCase("trade")) {
+            TradeData tradeData = plugin.cfg.tradeData.tradeList.get(id);
+            if (tradeData == null) {
+                throw new BadCommandException("user.inspect.trade.no_trade", id);
+            }
+
+            Player p = asPlayer(sender);
+            if (tradeData.item1 != null && tradeData.item1.getType() != Material.AIR)
+                p.getLocation().getWorld().dropItem(p.getLocation(), tradeData.item1.clone());
+            if (tradeData.item2 != null && tradeData.item2.getType() != Material.AIR)
+                p.getLocation().getWorld().dropItem(p.getLocation(), tradeData.item2.clone());
+            if (tradeData.result != null && tradeData.result.getType() != Material.AIR)
+                p.getLocation().getWorld().dropItem(p.getLocation(), tradeData.result.clone());
+        } else {
+            throw new BadCommandException("user.inspect.invalid_command", type);
         }
     }
 
@@ -248,9 +276,27 @@ public class CommandHandler extends CommandReceiver {
     @SubCommand(value = "test")
     public void testCmd(CommandSender sender, Arguments args) {
         Player p = asPlayer(sender);
+        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "small.yml"));
+        ItemStack it = cfg.getItemStack("item");
+        p.getLocation().getWorld().dropItem(p.getLocation(), it);
+        p.sendMessage(ItemStackUtils.itemToJson(it));
+        p.sendMessage(ItemStackUtils.itemToBase64(it));
+
+        ItemMeta m = it.getItemMeta();
+        m.addAttributeModifier(Attribute.GENERIC_MOVEMENT_SPEED, new AttributeModifier("name", 1, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+        it.setItemMeta(m);
+        p.sendMessage(ItemStackUtils.itemToJson(it));
+        cfg.set("item", it);
+        p.sendMessage(cfg.saveToString());
+
+
+        // ItemStack sec = cfg.getItemStack("190.recipes.2.resultItem");
+        // p.sendMessage(sec.toString());
+
         //DummyPlayer d = new DummyPlayer();
         //plugin.dummyController.sendPlayerInfoList(d, p);
     }
+
 
     private Block getRayTraceBlock(CommandSender sender) {
         return RayTraceUtils.rayTraceBlock(asPlayer(sender));

@@ -16,9 +16,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.weather.LightningStrikeEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -39,7 +39,8 @@ public class EntitiesManager implements Listener {
     /* ********************* */
     /*        Init           */
     /* ********************* */
-    public static final long TICK_FREQUENCY = 2; // onTick() will be called every 2 ticks
+    public static final long TICK_FREQUENCY = 2;         // onTick() will be called every 2 ticks
+    public static final long PER_TICK_UPDATE_LIMIT = 5; // how many NPCs can be updated every tick, at most
 
     private final NyaaPlayerCoser plugin;
 
@@ -216,6 +217,7 @@ public class EntitiesManager implements Listener {
         @Override
         public void run() {
             if (enabled) {
+                sanityCheckTick();
                 entitySpawnTick();
                 updateNpcDirectionTick();
             } else {
@@ -236,7 +238,8 @@ public class EntitiesManager implements Listener {
     private final Queue<String> pendingEntityCreation = new LinkedList<>();
 
     void entitySpawnTick() {
-        while (pendingEntityCreation.size() > 0) {
+        int updated_counter = 0;
+        while (pendingEntityCreation.size() > 0 && updated_counter < PER_TICK_UPDATE_LIMIT) {
             String npcId = pendingEntityCreation.remove();
 
             // check spawning conditions
@@ -249,7 +252,7 @@ public class EntitiesManager implements Listener {
 
             npc.despawn();
             npc.spawn();
-            break;
+            updated_counter++;
         }
     }
 
@@ -280,7 +283,8 @@ public class EntitiesManager implements Listener {
             pendingUpdateLookDirection.addAll(idNpcMapping.values());
         }
 
-        while (!pendingUpdateLookDirection.isEmpty()) {
+        int updated_counter = 0;
+        while (!pendingUpdateLookDirection.isEmpty() && updated_counter < PER_TICK_UPDATE_LIMIT) {
             NPCBase npc = pendingUpdateLookDirection.poll();
             Location eyeLoc = npc.getEyeLocation();
             if (eyeLoc == null) continue;
@@ -292,9 +296,34 @@ public class EntitiesManager implements Listener {
                 npc.setPitchYaw(eyeLoc.getPitch(), eyeLoc.getYaw());
                 observedNpcs.add(npc);
             }
-            break;
+            updated_counter++;
         }
         recentlyObservedNpcs = observedNpcs;
+    }
+
+    /* ********************* */
+    /* Sanity check loop     */
+    /* ********************* */
+    private final Queue<NPCBase> pendingSanityCheckLocation = new LinkedList<>();
+
+    void sanityCheckTick() {
+        if (pendingSanityCheckLocation.isEmpty()) {
+            pendingSanityCheckLocation.addAll(idNpcMapping.values());
+        }
+
+        while (!pendingSanityCheckLocation.isEmpty()) {
+            NPCBase npc = pendingSanityCheckLocation.poll();
+
+            if (npc.doSanityCheck()) {
+                forceRespawnNpc(npc.id);
+                break;
+            }
+
+            if (npc.getUnderlyingSpawnedEntity() != null) {
+                npc.resetLocation();
+                break;
+            }
+        }
     }
 
     /**
@@ -393,6 +422,38 @@ public class EntitiesManager implements Listener {
                 } else {
                     npc.onPlayerEnterRange(ev.getPlayer());
                 }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityCatchFire(EntityCombustEvent ev) {
+        if (NPCBase.isNyaaNPC(ev.getEntity())) {
+            ev.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCreeperCharge(CreeperPowerEvent ev) {
+        if (NPCBase.isNyaaNPC(ev.getEntity())) {
+            ev.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPigMorph(PigZapEvent ev) {
+        if (NPCBase.isNyaaNPC(ev.getEntity())) {
+            ev.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onLightningStrike(LightningStrikeEvent ev) {
+        Location loc = ev.getLightning().getLocation();
+        for (Entity e : loc.getWorld().getNearbyEntities(loc, 4, 4, 4)) {
+            if (NPCBase.isNyaaNPC(e)) {
+                ev.setCancelled(true);
+                return;
             }
         }
     }

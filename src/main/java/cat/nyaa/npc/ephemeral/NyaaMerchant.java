@@ -7,6 +7,7 @@ import org.bukkit.craftbukkit.v1_13_R2.inventory.CraftMerchantCustom;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.MerchantInventory;
+import org.bukkit.inventory.MerchantRecipe;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +26,7 @@ public class NyaaMerchant extends CraftMerchantCustom {
         this.id = npcId;
         this.data = data;
 
-        List<NyaaMerchantRecipe> recipes = new ArrayList<>();
+        List<MerchantRecipe> recipes = new ArrayList<>();
         Map<String, TradeData> tradeList = NyaaPlayerCoser.instance.cfg.tradeData.tradeList;
 
         for (String tradeId : data.trades) {
@@ -35,7 +36,7 @@ public class NyaaMerchant extends CraftMerchantCustom {
                 throw new RuntimeException(); // FIXME
             }
         }
-        setRecipes((List) recipes);
+        setRecipes(recipes);
     }
 
     public String getNpcId() {

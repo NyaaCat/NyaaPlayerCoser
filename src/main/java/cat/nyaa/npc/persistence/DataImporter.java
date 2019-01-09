@@ -1,6 +1,7 @@
 package cat.nyaa.npc.persistence;
 
 import cat.nyaa.npc.NyaaPlayerCoser;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
@@ -93,7 +94,7 @@ public class DataImporter {
         npc.x = sec.getInt("x") + 0.5;
         npc.y = sec.getInt("y") + 0.0;
         npc.z = sec.getInt("z") + 0.5;
-        npc.displayName = sec.getString("name", "");
+        npc.displayName = ChatColor.translateAlternateColorCodes('&', sec.getString("name", ""));
         npc.nbtTag = assembleShopkeeperNbt(sec);
         npc.type = EntityType.fromName(sec.getString("object"));
         if (npc.type == null) throw new RuntimeException("Unknown entity type: " + sec.getString("object"));
@@ -129,8 +130,9 @@ public class DataImporter {
             }
             case VILLAGER: {
                 Villager.Profession prof = Villager.Profession.valueOf(sec.getString("prof", "FARMER"));
-                if (prof.isZombie()) prof = Villager.Profession.FARMER;
-                return String.format("{Profession:%d}", prof.ordinal());
+                int profId = prof.ordinal() - 1;
+                if (profId < 0 || profId > 5) profId = 0; // default to FARMER
+                return String.format("{Profession:%d,Career:0}", profId);
             }
             case PARROT: {
                 return String.format("{Variant:%d}", rnd.nextInt(5));

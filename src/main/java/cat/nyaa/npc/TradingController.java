@@ -26,9 +26,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryView;
-import org.bukkit.inventory.MerchantInventory;
+import org.bukkit.inventory.*;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -73,20 +71,22 @@ public class TradingController implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerInteractNPC(PlayerInteractEntityEvent ev) {
-        Player p = ev.getPlayer();
-
-        InventoryType currentInvType = p.getOpenInventory().getType();
-        if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
-            return; // skip if the player has another inventory opened
-        }
-
         String npcId = NPCBase.getNyaaNpcId(ev.getRightClicked());
         if (npcId == null) {
             return; // skip if not a nyaa npc
         }
-
-        activateNpcForPlayer(npcId, ev.getPlayer());
         ev.setCancelled(true);
+
+        if (ev.getHand() == EquipmentSlot.HAND) { // trigger activation only when main hand interact event
+            Player p = ev.getPlayer();
+            InventoryType currentInvType = p.getOpenInventory().getType();
+            if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
+                // sometimes the client will send multiple interact event in a row
+                // skip if the player has another inventory opened
+                return;
+            }
+            activateNpcForPlayer(npcId, ev.getPlayer());
+        }
     }
 
     private void activateNpcForPlayer(String npcId, Player p) {
@@ -206,26 +206,24 @@ public class TradingController implements Listener {
             if (ev.getClickedInventory() instanceof MerchantInventory && ev.getSlotType() == InventoryType.SlotType.RESULT) {
                 // player try to fetch the result item
                 MerchantInventory mInv = (MerchantInventory) ev.getClickedInventory();
-                if (mInv.getSelectedRecipe() instanceof NyaaMerchantRecipe) {
-                    NyaaMerchantRecipe indexRecipe;
-                    try {
-                        indexRecipe = (NyaaMerchantRecipe) m.getRecipe(mInv.getSelectedRecipeIndex());
-                        //NyaaMerchantRecipe usedRecipe = (NyaaMerchantRecipe) mInv.getSelectedRecipe();
-                    } catch (NullPointerException ex) {
-                        plugin.getLogger().log(Level.WARNING, "Error acquiring Merchant Recipe at index: " + Integer.toString(mInv.getSelectedRecipeIndex()), ex);
-                        ev.getWhoClicked().sendMessage("Internal Error: please report this bug");
+
+                try {
+                    MerchantRecipe recipe = m.getRecipe(mInv.getSelectedRecipeIndex());
+                    if (recipe instanceof NyaaMerchantRecipe) {
+                        NyaaMerchantRecipe nyaaRecipe = (NyaaMerchantRecipe) recipe;
+                        TradeData d = nyaaRecipe.getTradeData();
+
+                        if (d.allowedTradeCount(mInv.getItem(0), mInv.getItem(1)) <= 0) {
+                            ev.setResult(Event.Result.DENY); // mismatch item, deny exchange
+                        }
+                    } else {
                         ev.setResult(Event.Result.DENY);
-                        return;
+                        plugin.getLogger().warning(String.format("NyaaNPC (%s) with non-NPC recipe: %s", m.getNpcId(), recipe));
                     }
-
-                    TradeData d = indexRecipe.getTradeData();
-
-                    if (d.allowedTradeCount(mInv.getItem(0), mInv.getItem(1)) <= 0) {
-                        ev.setResult(Event.Result.DENY); // mismatch item, deny exchange
-                        ev.setCancelled(true);           // FIXME: same
-                    }
-                } else {
-                    return; // not nyaanpc recipe
+                } catch (NullPointerException ex) {
+                    plugin.getLogger().log(Level.WARNING, "Error trade with npc: " + m.getNpcId(), ex);
+                    ev.getWhoClicked().sendMessage("Internal Error: please report this bug");
+                    ev.setResult(Event.Result.DENY);
                 }
             }
         } else {
@@ -296,27 +294,24 @@ public class TradingController implements Listener {
                 if (dummyNpc != null) {
                     event.setCancelled(true);
                     PacketPlayInUseEntity.EnumEntityUseAction action = event.getPacket().getEnumModifier(PacketPlayInUseEntity.EnumEntityUseAction.class, 1).read(0);
-                    EnumHand hand = event.getPacket().getEnumModifier(EnumHand.class, 3).read(0);
+                    if (action == PacketPlayInUseEntity.EnumEntityUseAction.INTERACT) {
+                        EnumHand hand = event.getPacket().getEnumModifier(EnumHand.class, 3).read(0);
 
-                    if (action == PacketPlayInUseEntity.EnumEntityUseAction.INTERACT && hand == EnumHand.MAIN_HAND) {
-                        Player p = event.getPlayer();
-                        InventoryType currentInvType = p.getOpenInventory().getType();
-                        if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
-                            return; // skip if the player has another inventory opened
+                        if (hand == EnumHand.MAIN_HAND) {
+                            Player p = event.getPlayer();
+                            InventoryType currentInvType = p.getOpenInventory().getType();
+                            if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
+                                return; // skip if the player has another inventory opened
+                            }
+
+                            if (p.getLocation().getWorld() != dummyNpc.getEyeLocation().getWorld()) return;
+                            if (p.getLocation().distanceSquared(dummyNpc.getEyeLocation()) > 36)
+                                return; // skip if too far away from npc
+
+                            activateNpcForPlayer(dummyNpc.id, p);
                         }
-
-                        if (p.getLocation().getWorld() != dummyNpc.getEyeLocation().getWorld()) return;
-                        if (p.getLocation().distanceSquared(dummyNpc.getEyeLocation()) > 36)
-                            return; // skip if too far away from npc
-
-                        activateNpcForPlayer(dummyNpc.id, p);
                     }
                 }
-
-                PacketPlayInUseEntity.EnumEntityUseAction action = event.getPacket().getEnumModifier(PacketPlayInUseEntity.EnumEntityUseAction.class, 1).read(0);
-                org.bukkit.util.Vector vec = event.getPacket().getVectors().read(0);
-                EnumHand hand = event.getPacket().getEnumModifier(EnumHand.class, 3).read(0);
-                event.getPlayer().sendMessage(String.format("entityid=%d, action=%s, vec=%s, hand=%s", entityId, action.name(), vec == null ? "null" : vec.toString(), hand.name()));
             }
         }
     };

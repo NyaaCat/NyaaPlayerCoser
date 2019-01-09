@@ -91,4 +91,20 @@ public abstract class NPCBase {
      * @return null if entity does not exists
      */
     public abstract Location getEyeLocation();
+
+    public abstract Entity getUnderlyingSpawnedEntity();
+
+    /**
+     * TODO merge into doSanityCheck
+     */
+    public abstract void resetLocation();
+
+    /**
+     * periodically called by EntitiesManager.
+     * <p>
+     * return true if anything goes wrong and requires a respawn
+     */
+    public abstract boolean doSanityCheck();
+
+
 }

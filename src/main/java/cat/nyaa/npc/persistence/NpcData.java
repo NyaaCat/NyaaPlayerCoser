@@ -51,6 +51,15 @@ public class NpcData implements ISerializable, Cloneable {
         return l;
     }
 
+    /**
+     * @deprecated may cause chunk load
+     */
+    public Location getEntityLocation() {
+        World w = Bukkit.getWorld(worldName);
+        if (w == null) return null;
+        return new Location(w, x, y, z, 0, 0);
+    }
+
     @Serializable
     public UUID ownerId;
     @Serializable
