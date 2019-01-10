@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
  */
 public abstract class NPCBase {
     public static final String SCOREBOARD_TAG_PREFIX = "nyaa_npc_id:";
+    public static final String NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG = "nyaa_npc_spawning";
 
     /**
      * Check if the entity is a NyaaNPC

@@ -279,7 +279,7 @@ public class CommandHandler extends CommandReceiver {
                 for (Map.Entry<String, NpcData> entry : plugin.cfg.npcData.npcList.entrySet()) {
                     NpcData d = entry.getValue();
                     if (w.equals(d.worldName) && box.contains(d.x, d.y, d.z)) {
-                        msg(sender, "user.inspect.nearby.cursor", _shortNpcDescription(entry.getKey()));
+                        msg(sender, "user.inspect.nearby.found", _shortNpcDescription(entry.getKey()));
                         found = true;
                     }
                 }

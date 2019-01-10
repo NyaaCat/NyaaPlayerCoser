@@ -51,9 +51,17 @@ public class NPCLiving extends NPCBase {
         Location loc = new Location(w, data.x, data.y, data.z);
 
         // spawn
-        LivingEntity e = (LivingEntity) w.spawnEntity(loc, data.entityType);
+        LivingEntity e = (LivingEntity) w.spawn(loc, data.entityType.getEntityClass(),
+                ee->ee.addScoreboardTag(NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG));
         if (data.nbtTag != null && data.nbtTag.length() > 0) {
             NmsUtils.setEntityTag(e, data.nbtTag);
+        }
+        if (!e.getScoreboardTags().contains(NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG) || Bukkit.getEntity(e.getUniqueId()) == null) {
+            // some how failed to spawn
+            e.remove();
+            return;
+        } else {
+            e.removeScoreboardTag(NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG);
         }
 
         // post spawn customization

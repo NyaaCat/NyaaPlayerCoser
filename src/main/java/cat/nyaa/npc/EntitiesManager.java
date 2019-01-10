@@ -26,8 +26,7 @@ import org.bukkit.util.Vector;
 
 import java.util.*;
 
-import static cat.nyaa.npc.ephemeral.NPCBase.getNyaaNpcId;
-import static cat.nyaa.npc.ephemeral.NPCBase.isNyaaNPC;
+import static cat.nyaa.npc.ephemeral.NPCBase.*;
 
 /**
  * A NPC entity should never be stored in disk files.
@@ -454,6 +453,22 @@ public class EntitiesManager implements Listener {
             if (NPCBase.isNyaaNPC(e)) {
                 ev.setCancelled(true);
                 return;
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    public void onNpcSpawnDecision(EntitySpawnEvent ev) {
+        if (ev.getEntity().getScoreboardTags().contains(NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG)) {
+            ev.setCancelled(false); // force spawn npc
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    public void onNpcSpawnDecisionMade(EntitySpawnEvent ev) {
+        if (ev.getEntity().getScoreboardTags().contains(NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG)) {
+            if (ev.isCancelled()) { // the npc still not spawn
+                ev.getEntity().removeScoreboardTag(NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG);
             }
         }
     }
