@@ -51,7 +51,7 @@ public class NPCLiving extends NPCBase {
         Location loc = new Location(w, data.x, data.y, data.z);
 
         // spawn
-        LivingEntity e = (LivingEntity) w.spawnEntity(loc, data.type);
+        LivingEntity e = (LivingEntity) w.spawnEntity(loc, data.entityType);
         if (data.nbtTag != null && data.nbtTag.length() > 0) {
             NmsUtils.setEntityTag(e, data.nbtTag);
         }
@@ -73,7 +73,7 @@ public class NPCLiving extends NPCBase {
 
     @Override
     public void setPitchYaw(Float pitch, Float yaw) {
-        if (data.type == EntityType.PHANTOM) {
+        if (data.entityType == EntityType.PHANTOM) {
             if (pitch != null) {
                 pitch = -pitch;
             }
@@ -98,8 +98,13 @@ public class NPCLiving extends NPCBase {
     }
 
     @Override
-    public void resetLocation() {
+    public SanityCheckResult doSanityCheck() {
         if (spawnedEntity != null) {
+            if (spawnedEntity.isDead()) return SanityCheckResult.TAINTED;
+            if (spawnedEntity.getType() != data.entityType) return SanityCheckResult.TAINTED;
+            spawnedEntity.setFireTicks(0);
+
+            // reset location
             if (spawnedEntity.isInsideVehicle()) spawnedEntity.leaveVehicle();
             Location loc = spawnedEntity.getLocation();
             Location definedLoc = data.getEntityLocation();
@@ -110,16 +115,10 @@ public class NPCLiving extends NPCBase {
             if (!loc.getWorld().getName().equals(definedLoc.getWorld().getName()) || Math.abs(deltaY) > 2 || deltaX * deltaX + deltaZ * deltaZ > 0.1) {
                 spawnedEntity.teleport(definedLoc);
             }
-        }
-    }
 
-    @Override
-    public boolean doSanityCheck() {
-        if (spawnedEntity != null) {
-            if (spawnedEntity.isDead()) return true;
-            if (spawnedEntity.getType() != data.type) return true;
-            spawnedEntity.setFireTicks(0);
+            return SanityCheckResult.CHECKED;
+        } else {
+            return SanityCheckResult.SKIPPED;
         }
-        return false;
     }
 }

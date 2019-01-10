@@ -12,7 +12,7 @@ commands:
   nyaaplayercoser:
     description: The command for NyaaPlayerCoser
     aliases: npc
-    permission: npc.admin
+    permission: npc.command
     permission-message: "You do not have the required permission: <permission>"
     usage: "/<command> [SubCommand...] [Arguments...] or /<command> help"
 
@@ -21,16 +21,17 @@ permissions:
     description: Permissions for the god
     default: op
     children:
-      npc.admin.spawn: true
-      npc.admin.info: true
-      npc.admin.remove: true
-      npc.admin.edit: true
-      npc.admin.import: true
-      npc.admin.reload: true
-
+      npc.player: true
+      npc.command.inspect: true
+      npc.command.import: true
+      npc.command.reload: true
   npc.player:
     description: Permissions for players
     default: op
     children:
-      npc.player.spawn: true
-      npc.player.remove: true
+      npc.command.spawn: true
+      npc.command.remove: true
+      npc.command.edit: true
+  npc.interact:
+    description: Permission required to interact with NPCs
+    default: true

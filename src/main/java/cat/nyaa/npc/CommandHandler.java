@@ -1,18 +1,17 @@
 package cat.nyaa.npc;
 
 import cat.nyaa.npc.ephemeral.NPCBase;
+import cat.nyaa.npc.ephemeral.NyaaMerchant;
 import cat.nyaa.npc.persistence.DataImporter;
 import cat.nyaa.npc.persistence.NpcData;
 import cat.nyaa.npc.persistence.NpcType;
 import cat.nyaa.npc.persistence.TradeData;
 import cat.nyaa.nyaacore.CommandReceiver;
+import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.utils.ClickSelectionUtils;
 import cat.nyaa.nyaacore.utils.ItemStackUtils;
 import cat.nyaa.nyaacore.utils.RayTraceUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
@@ -25,10 +24,12 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class CommandHandler extends CommandReceiver {
@@ -44,25 +45,36 @@ public class CommandHandler extends CommandReceiver {
         return "";
     }
 
-    @SubCommand(value = "reload", permission = "npc.admin.reload")
+    @SubCommand(value = "reload", permission = "npc.command.reload")
     public void reloadCommand(CommandSender sender, Arguments args) {
         plugin.onReload();
     }
 
-    @SubCommand(value = "import", permission = "npc.admin.import")
+    @SubCommand(value = "import", permission = "npc.command.import")
     public void importFromShopkeeper(CommandSender sender, Arguments args) {
-        DataImporter.importShopkeeper(plugin, sender);
+        File file = new File(plugin.getDataFolder(), "save.yml");
+        if (file.isFile()) {
+            DataImporter.importShopkeeper(plugin, sender);
+        } else {
+            sender.sendMessage("save.yml not found, please put in plugin data folder.");
+        }
     }
 
-    @SubCommand(value = "spawn", permission = "npc.admin.spawn")
+    @SubCommand(value = "spawn", permission = "npc.command.spawn")
     public void newNpcDefinition(CommandSender sender, Arguments args) {
-        EntityType type = args.nextEnum(EntityType.class);
-        if (!plugin.cfg.isAllowedType(type)) {
-            throw new BadCommandException("user.spawn.type_disallow", type.name());
+        EntityType entityType = args.nextEnum(EntityType.class);
+        if (!plugin.cfg.isAllowedType(entityType)) {
+            throw new BadCommandException("user.spawn.type_disallow", entityType.name());
         }
-        String name = args.nextString();
+        NpcType npctype = args.nextEnum(NpcType.class);
+        if (npctype != NpcType.TRADER_UNLIMITED && npctype != NpcType.HEH_SELL_SHOP) {
+            throw new BadCommandException("user.spawn.npctype_disallow", npctype.name());
+        }
+
+        String name = ChatColor.translateAlternateColorCodes('&', args.nextString());
         String entitydataTag = args.next();
         if (entitydataTag == null) entitydataTag = "";
+
         Block b = getRayTraceBlock(sender);
         if (b == null || b.getType() == Material.AIR) {
             throw new BadCommandException("user.spawn.not_block");
@@ -70,144 +82,307 @@ public class CommandHandler extends CommandReceiver {
         if (b.getRelative(BlockFace.UP).getType().isSolid() || b.getRelative(0, 2, 0).getType().isSolid()) {
             throw new BadCommandException("user.spawn.not_enough_space");
         }
-        NpcData data = new NpcData(asPlayer(sender).getUniqueId(), b.getLocation().clone().add(.5, /* TODO: NmsUtils.getBlockHeight(b) */ 1, .5), name, type, entitydataTag);
+
+        NpcData data = new NpcData(
+                asPlayer(sender).getUniqueId(),
+                b.getLocation().clone().add(.5, /* TODO: NmsUtils.getBlockHeight(b) */ 1, .5),
+                name, entityType, npctype, entitydataTag);
+        data.hehShopOwnerUUID = data.ownerId;
         String npcId = plugin.entitiesManager.createNpcDefinition(data);
         msg(sender, "user.spawn.id_created", npcId);
     }
 
-    @SubCommand(value = "info", permission = "npc.admin.info")
-    public void inspectNpcInfo(CommandSender sender, Arguments args) {
-        String npcId = null;
-        if (args.top() != null) {
-            npcId = args.nextString();
-        } else {
-            // select cursor entity
-            Player p = asPlayer(sender);
-            double minAngle = Math.PI / 2D;
-            for (Entity e : p.getNearbyEntities(3, 3, 3)) {
-                if (!NPCBase.isNyaaNPC(e)) continue;
-                LivingEntity currentMobEntity = (LivingEntity) e;
-                Vector eyeSight = p.getEyeLocation().getDirection();
-                Vector mobVector = currentMobEntity.getEyeLocation().toVector().subtract(p.getEyeLocation().toVector());
-                double angle = getVectorAngle(eyeSight, mobVector);
-                if (!Double.isFinite(angle)) continue;
-                if (angle >= minAngle) continue;
-                minAngle = angle;
-                npcId = NPCBase.getNyaaNpcId(e);
-            }
-        }
-        if (npcId == null) {
-            throw new BadCommandException("user.info.no_selection");
-        }
-        NpcData data = asNpcData(npcId);
-        msg(sender, "user.info.msg_id", npcId);
-        msg(sender, "user.info.msg_name", data.displayName);
-        msg(sender, "user.info.msg_type", data.type.name());
-        msg(sender, "user.info.msg_npctype", data.npcType.name());
-        msg(sender, "user.info.msg_loc",
-                String.format("[world=%s, x=%.2f, y=%.2f, z=%.2f]", data.worldName, data.x, data.y, data.z));
-        if (data.trades.size() > 0) {
-            for (String trade : data.trades) {
-                msg(sender, "user.info.msg_trade", trade);
-            }
-        } else {
-            msg(sender, "user.info.msg_no_trade");
-        }
-    }
-
-    @SubCommand(value = "inspect", permission = "npc.admin.inspect")
-    public void inspectData(CommandSender sender, Arguments args) {
-        String type = args.nextString();
-        String id = args.nextString();
-        if (type.equalsIgnoreCase("trade")) {
-            TradeData tradeData = plugin.cfg.tradeData.tradeList.get(id);
-            if (tradeData == null) {
-                throw new BadCommandException("user.inspect.trade.no_trade", id);
-            }
-
-            Player p = asPlayer(sender);
-            if (tradeData.item1 != null && tradeData.item1.getType() != Material.AIR)
-                p.getLocation().getWorld().dropItem(p.getLocation(), tradeData.item1.clone());
-            if (tradeData.item2 != null && tradeData.item2.getType() != Material.AIR)
-                p.getLocation().getWorld().dropItem(p.getLocation(), tradeData.item2.clone());
-            if (tradeData.result != null && tradeData.result.getType() != Material.AIR)
-                p.getLocation().getWorld().dropItem(p.getLocation(), tradeData.result.clone());
-        } else {
-            throw new BadCommandException("user.inspect.invalid_command", type);
-        }
-    }
-
-    @SubCommand(value = "remove", permission = "npc.admin.remove")
+    @SubCommand(value = "remove", permission = "npc.command.remove")
     public void removeNpcDefinition(CommandSender sender, Arguments args) {
         String npcId = args.nextString();
         asNpcData(npcId);
         plugin.entitiesManager.removeNpcDefinition(npcId);
     }
 
-    @SubCommand(value = "rename", permission = "npc.admin.edit")
-    public void renameNpc(CommandSender sender, Arguments args) {
+    @SubCommand(value = "edit", permission = "npc.command.edit")
+    public void editNpc(CommandSender sender, Arguments args) {
         String npcId = args.nextString();
-        NpcData data = asNpcData(npcId);
-        String newName = args.nextString();
-        data.displayName = newName;
-        plugin.entitiesManager.replaceNpcDefinition(npcId, data);
-    }
+        if ("help".equals(npcId)) {
+            msg(sender, "user.edit.help_msg");
+            return;
+        }
 
-    @SubCommand(value = "modify", permission = "npc.admin.edit")
-    public void modifyNpc(CommandSender sender, Arguments args) {
-        String npcId = args.nextString();
-        NpcData data = asNpcData(npcId);
+        NpcData data = asNpcData(npcId).clone();
         boolean modified = false;
 
         String newName = args.argString("name", null);
         if (newName != null) {
-            data.displayName = newName;
+            data.displayName = ChatColor.translateAlternateColorCodes('&', newName);
             modified = true;
         }
 
         String newNpcType = args.argString("npctype", null);
         if (newNpcType != null) {
             NpcType newType = Arguments.parseEnum(NpcType.class, newNpcType);
-            data.npcType = newType;
+            if (newType != NpcType.HEH_SELL_SHOP && newType != NpcType.TRADER_UNLIMITED) {
+                msg(sender, "user.spawn.npctype_disallow", newType.name());
+                return;
+            } else {
+                if (newType == NpcType.HEH_SELL_SHOP && data.hehShopOwnerUUID == null) {
+                    data.hehShopOwnerUUID = data.ownerId;
+                }
+                data.npcType = newType;
+                modified = true;
+            }
+        }
+
+        String newEntityType = args.argString("entitytype", null);
+        if (newEntityType != null) {
+            EntityType et = Arguments.parseEnum(EntityType.class, newEntityType);
+            if (!plugin.cfg.isAllowedType(et)) {
+                msg(sender, "user.spawn.type_disallow", et.name());
+            } else {
+                data.entityType = et;
+                modified = true;
+            }
+        }
+
+        String owner = args.argString("owner", null);
+        if (owner != null) {
+            try {
+                data.ownerId = UUID.fromString(owner);
+                modified = true;
+            } catch (IllegalArgumentException ex) {
+                msg(sender, "user.edit.invalid_uuid", owner);
+                return;
+            }
+        }
+
+        String hehowner = args.argString("hehowner", null);
+        if (owner != null) {
+            try {
+                data.hehShopOwnerUUID = UUID.fromString(hehowner);
+                modified = true;
+            } catch (IllegalArgumentException ex) {
+                msg(sender, "user.edit.invalid_uuid", hehowner);
+                return;
+            }
+        }
+
+        String nbt = args.argString("nbt", null);
+        if (nbt != null) {
+            data.nbtTag = nbt;
+            modified = true;
+        }
+
+        String loc = args.argString("location", null);
+        if (loc != null) {
+            if ("me".equals(loc)) {
+                Location playerLoc = asPlayer(sender).getLocation();
+                String w = playerLoc.getWorld().getName();
+                double x = Math.floor(playerLoc.getX()) + 0.5;
+                double y = playerLoc.getY();
+                double z = Math.floor(playerLoc.getZ()) + 0.5;
+                data.worldName = w;
+                data.x = x;
+                data.y = y;
+                data.z = z;
+                modified = true;
+            } else {
+                msg(sender, "user.edit.invalid_location");
+                return;
+            }
+        }
+
+        String trade_op = args.argString("trade", null);
+        if (trade_op != null) {
+            if ("+".equals(trade_op)) {
+                ItemStack itemStack1 = getItemStackInSlot(sender, 0, false);
+                ItemStack itemStack2 = getItemStackInSlot(sender, 1, true);
+                ItemStack result = getItemStackInSlot(sender, 2, false);
+                TradeData td = new TradeData(itemStack1, itemStack2, result);
+                String tradeId = plugin.cfg.tradeData.addTrade(td);
+                msg(sender, "user.edit.trade_id_created", tradeId);
+                data.trades.add(tradeId);
+            } else if (trade_op.startsWith("+")) {
+                String trade_id = trade_op.substring(1);
+                if (plugin.cfg.tradeData.tradeList.containsKey(trade_id)) {
+                    data.trades.add(trade_id);
+                } else {
+                    msg(sender, "user.edit.trade_id_notfound", trade_id);
+                    return;
+                }
+            } else if (trade_op.startsWith("-")) {
+                String trade_id = trade_op.substring(1);
+                if (data.trades.contains(trade_id)) {
+                    data.trades.remove(trade_id);
+                } else {
+                    msg(sender, "user.edit.trade_id_notfound", trade_id);
+                    return;
+                }
+            } else {
+                msg(sender, "user.edit.trade_op_invalid");
+                return;
+            }
             modified = true;
         }
 
         if (modified) {
             plugin.entitiesManager.replaceNpcDefinition(npcId, data);
+            msg(sender, "user.edit.updated");
+        } else {
+            msg(sender, "user.edit.not_updated");
         }
     }
 
-    @SubCommand(value = "list", permission = "npc.admin.list")
+    private static LivingEntity _selectCursorEntity(Player p) {
+        double minAngle = Math.PI / 2D;
+        LivingEntity ret = null;
+        for (Entity e : p.getNearbyEntities(6, 6, 6)) {
+            if (!NPCBase.isNyaaNPC(e)) continue;
+            LivingEntity currentMobEntity = (LivingEntity) e;
+            Vector eyeSight = p.getEyeLocation().getDirection();
+            Vector mobVector = currentMobEntity.getEyeLocation().toVector().subtract(p.getEyeLocation().toVector());
+            double angle = getVectorAngle(eyeSight, mobVector);
+            if (!Double.isFinite(angle)) continue;
+            if (angle >= minAngle) continue;
+            minAngle = angle;
+            ret = currentMobEntity;
+        }
+        return ret;
+    }
+
+    private String _shortNpcDescription(String npcId) {
+        if (npcId == null) return "{id=<null>}";
+        NpcData data = plugin.cfg.npcData.npcList.get(npcId);
+        if (data == null) return String.format("{id=%s, data=<null>}", npcId);
+        return String.format("{id=%s, name=%s, npctype=%s, entitytype=%s}", npcId, data.displayName, data.npcType, data.entityType);
+    }
+
+    @SubCommand(value = "inspect", permission = "npc.command.inspect")
+    public void inspectData(CommandSender sender, Arguments args) {
+        String subcommand = args.nextString();
+
+        if ("nearby".equalsIgnoreCase(subcommand)) {
+            int scanRange = -1;
+            if (args.top() != null) {
+                scanRange = args.nextInt();
+            }
+
+            LivingEntity cursorEntity = _selectCursorEntity(asPlayer(sender));
+            String id = NPCBase.getNyaaNpcId(cursorEntity);
+            if (id != null) {
+                msg(sender, "user.inspect.nearby.cursor", _shortNpcDescription(id));
+            } else {
+                msg(sender, "user.inspect.nearby.no_cursor");
+            }
+
+            if (scanRange > 0) {
+                BoundingBox box = BoundingBox.of(asPlayer(sender).getLocation(), scanRange, scanRange, scanRange);
+                String w = asPlayer(sender).getLocation().getWorld().getName();
+                boolean found = false;
+                for (Map.Entry<String, NpcData> entry : plugin.cfg.npcData.npcList.entrySet()) {
+                    NpcData d = entry.getValue();
+                    if (w.equals(d.worldName) && box.contains(d.x, d.y, d.z)) {
+                        msg(sender, "user.inspect.nearby.cursor", _shortNpcDescription(entry.getKey()));
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    msg(sender, "user.inspect.nearby.not_found");
+                }
+            }
+        } else if ("npc".equalsIgnoreCase(subcommand)) {
+            String npcId = args.nextString();
+            NpcData data = asNpcData(npcId);
+
+            // basic info
+            msg(sender, "user.inspect.npc.msg_id", npcId);
+            msg(sender, "user.inspect.npc.msg_name", data.displayName);
+            msg(sender, "user.inspect.npc.msg_entitytype", data.entityType);
+            msg(sender, "user.inspect.npc.msg_npctype", data.npcType);
+            msg(sender, "user.inspect.npc.msg_loc",
+                    String.format("[world=%s, x=%.2f, y=%.2f, z=%.2f]", data.worldName, data.x, data.y, data.z));
+            msg(sender, "user.inspect.npc.msg_chest_loc",
+                    String.format("[world=%s, x=%d, y=%d, z=%d]", data.chestWorldName, data.chestX, data.chestY, data.chestZ));
+            msg(sender, "user.inspect.npc.msg_nbt", data.nbtTag);
+
+            String ownerName = data.ownerId == null ? null : Bukkit.getOfflinePlayer(data.ownerId).getName();
+            String hehOwnerName = data.hehShopOwnerUUID == null ? null : Bukkit.getOfflinePlayer(data.hehShopOwnerUUID).getName();
+            msg(sender, "user.inspect.npc.msg_owner", data.ownerId, ownerName);
+            msg(sender, "user.inspect.npc.msg_hehowner", data.hehShopOwnerUUID, hehOwnerName);
+
+            // trade data
+            if (data.trades.size() > 0) {
+                msg(sender, "user.inspect.npc.msg_trade_head");
+                for (String tradeId : data.trades) {
+                    TradeData td = plugin.cfg.tradeData.tradeList.get(tradeId);
+                    if (td == null) {
+                        msg(sender, "user.inspect.npc.msg_trade_notfound", tradeId);
+                    } else {
+                        td.appendDescription(new Message("  " + tradeId + ": ")).send(sender);
+                    }
+                }
+            } else {
+                msg(sender, "user.inspect.npc.msg_no_trade");
+            }
+
+            // ephemeral data
+            NPCBase base = plugin.entitiesManager.idNpcMapping.get(npcId);
+            if (base == null) {
+                msg(sender, "user.inspect.npc.eph_notfound");
+            } else {
+                msg(sender, "user.inspect.npc.eph_entity", base.getUnderlyingSpawnedEntity());
+                Set<NyaaMerchant> activeMerchants = plugin.tradingController.activeMerchants.get(npcId);
+                if (activeMerchants != null && activeMerchants.size() > 0) {
+                    msg(sender, "user.inspect.npc.eph_merchant_header");
+                    for (NyaaMerchant m : activeMerchants) {
+                        if (m == null) {
+                            msg(sender, "user.inspect.npc.eph_merchant_item", null, null, null);
+                        } else {
+                            String traderName = m.getTrader() == null ? null : m.getTrader().getName();
+                            msg(sender, "user.inspect.npc.eph_merchant_item", m, m.getTrader(), traderName);
+                        }
+                    }
+                }
+            }
+        } else if ("trade".equalsIgnoreCase(subcommand)) {
+            String id = args.nextString();
+            TradeData tradeData = plugin.cfg.tradeData.tradeList.get(id);
+            if (tradeData == null) {
+                throw new BadCommandException("user.inspect.trade.no_trade", id);
+            }
+
+            if (tradeData.item1 != null)
+                new Message(I18n.format("user.inspect.trade.item1")).append(tradeData.item1.clone()).send(sender);
+            if (tradeData.item2 != null)
+                new Message(I18n.format("user.inspect.trade.item2")).append(tradeData.item2.clone()).send(sender);
+            if (tradeData.result != null)
+                new Message(I18n.format("user.inspect.trade.result")).append(tradeData.result.clone()).send(sender);
+
+            if (sender instanceof Player) {
+                Player p = asPlayer(sender);
+                if (tradeData.item1 != null && tradeData.item1.getType() != Material.AIR)
+                    p.getLocation().getWorld().dropItem(p.getLocation(), tradeData.item1.clone());
+                if (tradeData.item2 != null && tradeData.item2.getType() != Material.AIR)
+                    p.getLocation().getWorld().dropItem(p.getLocation(), tradeData.item2.clone());
+                if (tradeData.result != null && tradeData.result.getType() != Material.AIR)
+                    p.getLocation().getWorld().dropItem(p.getLocation(), tradeData.result.clone());
+                msg(p, "user.inspect.trade.item_given");
+            }
+        } else {
+            throw new BadCommandException("user.inspect.invalid_command", subcommand);
+        }
+    }
+
+    @SubCommand(value = "list", permission = "npc.command.inspect")
     public void listNpc(CommandSender sender, Arguments args) {
         if (plugin.cfg.npcData.npcList.size() == 0) {
-            msg(sender, "user.list.no_npc");
+            sender.sendMessage("No npc");
         } else {
             for (Map.Entry<String, NpcData> e : plugin.cfg.npcData.npcList.entrySet()) {
-                msg(sender, "user.list.msg",
-                        e.getValue().displayName,
-                        e.getKey(),
-                        e.getValue().type.name(),
-                        e.getValue().npcType.name());
+                sender.sendMessage(_shortNpcDescription(e.getKey()));
             }
         }
     }
 
-    @SubCommand(value = "newtrade", permission = "npc.admin.edit")
-    public void newTradeForNPC(CommandSender sender, Arguments args) {
-        String npcId = args.nextString();
-        NpcData npc = asNpcData(npcId);
 
-        ItemStack itemStack1 = getItemStackInSlot(sender, 0, false);
-        ItemStack itemStack2 = getItemStackInSlot(sender, 1, true);
-        ItemStack result = getItemStackInSlot(sender, 2, false);
-        TradeData data = new TradeData(itemStack1, itemStack2, result);
-        String tradeId = plugin.cfg.tradeData.addTrade(data);
-        msg(sender, "user.newtrade.id_created", tradeId);
-        npc.trades.add(tradeId);
-        plugin.entitiesManager.replaceNpcDefinition(npcId, npc);
-    }
-
-    @SubCommand(value = "chest", permission = "npc.admin.edit")
+    //@SubCommand(value = "chest", permission = "npc.admin.edit")
     public void editChestInfo(CommandSender sender, Arguments args) {
         String npcId = args.nextString();
         NpcData npc = asNpcData(npcId);
@@ -266,14 +441,14 @@ public class CommandHandler extends CommandReceiver {
         }
     }
 
-    @SubCommand(value = "adjust_location", permission = "npc.admin.edit")
+    //@SubCommand(value = "adjust_location", permission = "npc.admin.edit")
     public void adjustLocation(CommandSender sender, Arguments args) {
         String npcId = args.nextString();
         asNpcData(npcId);
         plugin.entitiesManager.adjustNpcLocation(npcId, sender);
     }
 
-    @SubCommand(value = "test")
+    //@SubCommand(value = "test", permission = "npc.admin")
     public void testCmd(CommandSender sender, Arguments args) {
         Player p = asPlayer(sender);
         YamlConfiguration cfg = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "small.yml"));

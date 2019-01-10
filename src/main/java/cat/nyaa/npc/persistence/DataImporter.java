@@ -90,14 +90,13 @@ public class DataImporter {
             npc.ownerId = DEFAULT_OWNER_ID_SHOPKEEPER;
         }
         npc.worldName = sec.getString("world");
-        if (!"world".equals(npc.worldName)) throw new RuntimeException("npc not in main world: " + npc.worldName);
         npc.x = sec.getInt("x") + 0.5;
         npc.y = sec.getInt("y") + 0.0;
         npc.z = sec.getInt("z") + 0.5;
         npc.displayName = ChatColor.translateAlternateColorCodes('&', sec.getString("name", ""));
         npc.nbtTag = assembleShopkeeperNbt(sec);
-        npc.type = EntityType.fromName(sec.getString("object"));
-        if (npc.type == null) throw new RuntimeException("Unknown entity type: " + sec.getString("object"));
+        npc.entityType = EntityType.fromName(sec.getString("object"));
+        if (npc.entityType == null) throw new RuntimeException("Unknown entity type: " + sec.getString("object"));
         npc.enabled = true;
         npc.npcType = NpcType.TRADER_UNLIMITED;
         npc.trades = new ArrayList<>();
@@ -125,19 +124,33 @@ public class DataImporter {
         EntityType entityType = EntityType.fromName(sec.getString("object"));
         switch (entityType) {
             case OCELOT: {
-                Ocelot.Type t = Ocelot.Type.valueOf(sec.getString("catType", "WILD_OCELOT"));
-                return String.format("{CatType:%d}", t.getId());
+                String catTypeString = sec.getString("catType");
+                if (catTypeString == null) sec.getString("skeletonType");
+                if (catTypeString == null) catTypeString = "WILD_OCELOT";
+                try {
+                    Ocelot.Type t = Ocelot.Type.valueOf(catTypeString);
+                    return String.format("{CatType:%d}", t.getId());
+                } catch (IllegalArgumentException ex) {
+                    return "{CatType:0}";
+                }
             }
             case VILLAGER: {
-                Villager.Profession prof = Villager.Profession.valueOf(sec.getString("prof", "FARMER"));
-                int profId = prof.ordinal() - 1;
-                if (profId < 0 || profId > 5) profId = 0; // default to FARMER
-                return String.format("{Profession:%d,Career:0}", profId);
+                try {
+                    Villager.Profession prof = Villager.Profession.valueOf(sec.getString("prof", "FARMER"));
+                    int profId = prof.ordinal() - 1;
+                    if (profId < 0 || profId > 5) profId = 0; // default to FARMER
+                    return String.format("{Profession:%d,Career:0}", profId);
+                } catch (IllegalArgumentException ex) {
+                    return "{Profession:0,Career:0}";
+                }
             }
             case PARROT: {
                 return String.format("{Variant:%d}", rnd.nextInt(5));
             }
-            // TODO creeper pigzombie zombie sheep
+            case SHEEP: {
+                int color = sec.getInt("color", 0);
+                return String.format("{Color:%d}", color);
+            }
             default: {
                 return "";
             }

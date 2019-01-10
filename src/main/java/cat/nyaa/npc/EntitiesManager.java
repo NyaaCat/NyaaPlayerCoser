@@ -314,13 +314,13 @@ public class EntitiesManager implements Listener {
         while (!pendingSanityCheckLocation.isEmpty()) {
             NPCBase npc = pendingSanityCheckLocation.poll();
 
-            if (npc.doSanityCheck()) {
-                forceRespawnNpc(npc.id);
+            NPCBase.SanityCheckResult result = npc.doSanityCheck();
+            if (result == NPCBase.SanityCheckResult.SKIPPED) {
+                continue;
+            } else if (result == NPCBase.SanityCheckResult.CHECKED) {
                 break;
-            }
-
-            if (npc.getUnderlyingSpawnedEntity() != null) {
-                npc.resetLocation();
+            } else if (result == NPCBase.SanityCheckResult.TAINTED) {
+                forceRespawnNpc(npc.id);
                 break;
             }
         }
@@ -414,7 +414,7 @@ public class EntitiesManager implements Listener {
     public void onPlayerMove(PlayerMoveEvent ev) {
         Location playerLoc = ev.getTo();
         for (NPCBase npc : idNpcMapping.values()) {
-            if (npc.data.type == EntityType.PLAYER && npc.data.worldName.equals(playerLoc.getWorld().getName())) {
+            if (npc.data.entityType == EntityType.PLAYER && npc.data.worldName.equals(playerLoc.getWorld().getName())) {
                 double dst = Math.pow(playerLoc.getX() - npc.data.x, 2) +
                         Math.pow(playerLoc.getZ() - npc.data.z, 2);
                 if (dst > 9) {

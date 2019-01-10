@@ -16,6 +16,7 @@ public abstract class NPCBase {
      * Check if the entity is a NyaaNPC
      */
     public static boolean isNyaaNPC(Entity e) {
+        if (e == null) return false;
         return getNyaaNpcId(e) != null;
     }
 
@@ -24,6 +25,7 @@ public abstract class NPCBase {
      * @return npcid if it is a NyaaNPC, null otherwise
      */
     public static String getNyaaNpcId(Entity e) {
+        if (e == null) return null;
         for (String s : e.getScoreboardTags()) {
             if (s.startsWith(SCOREBOARD_TAG_PREFIX)) {
                 return s.substring(SCOREBOARD_TAG_PREFIX.length());
@@ -36,7 +38,7 @@ public abstract class NPCBase {
     public final NpcData data;
 
     public static NPCBase fromNpcData(String id, NpcData data) {
-        if (data.type == EntityType.PLAYER) {
+        if (data.entityType == EntityType.PLAYER) {
             return new NPCPlayer(id, data);
         } else {
             return new NPCLiving(id, data);
@@ -95,16 +97,17 @@ public abstract class NPCBase {
     public abstract Entity getUnderlyingSpawnedEntity();
 
     /**
-     * TODO merge into doSanityCheck
-     */
-    public abstract void resetLocation();
-
-    /**
      * periodically called by EntitiesManager.
      * <p>
      * return true if anything goes wrong and requires a respawn
      */
-    public abstract boolean doSanityCheck();
+    public abstract SanityCheckResult doSanityCheck();
+
+    public enum SanityCheckResult {
+        SKIPPED, // nothing is done, may check one more
+        CHECKED, // entity checked and considered good or minor errors corrected
+        TAINTED  // inconsistencies found and requires a respawn
+    }
 
 
 }

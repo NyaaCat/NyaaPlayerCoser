@@ -16,7 +16,6 @@ import net.minecraft.server.v1_13_R2.EnumHand;
 import net.minecraft.server.v1_13_R2.PacketPlayInUseEntity;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -34,6 +33,7 @@ import java.util.logging.Level;
 import static cat.nyaa.npc.persistence.NpcType.TRADER_BOX;
 import static cat.nyaa.npc.persistence.NpcType.TRADER_UNLIMITED;
 import static com.comphenix.protocol.PacketType.Play.Client.USE_ENTITY;
+import static org.bukkit.event.Event.Result.DENY;
 import static org.bukkit.event.inventory.InventoryType.CRAFTING;
 import static org.bukkit.event.inventory.InventoryType.CREATIVE;
 
@@ -66,7 +66,7 @@ public class TradingController implements Listener {
     /*        inventory view events           */
     /* ************************************** */
 
-    private final Map<String, Set<NyaaMerchant>> activeMerchants = new HashMap<>(); // npcid->merchant
+    public final Map<String, Set<NyaaMerchant>> activeMerchants = new HashMap<>(); // npcid->merchant
     // NOTE states are also maintained in NyaaMerchant.merchantLookupMap
 
     @EventHandler(ignoreCancelled = true)
@@ -76,6 +76,10 @@ public class TradingController implements Listener {
             return; // skip if not a nyaa npc
         }
         ev.setCancelled(true);
+
+        if (!ev.getPlayer().hasPermission("npc.interact")) {
+            return;
+        }
 
         if (ev.getHand() == EquipmentSlot.HAND) { // trigger activation only when main hand interact event
             Player p = ev.getPlayer();
@@ -202,6 +206,11 @@ public class TradingController implements Listener {
         NpcData data = m.getNpcData();
         if (data == null) return;
 
+        if (!ev.getWhoClicked().hasPermission("npc.interact")) {
+            ev.setResult(DENY);
+            return;
+        }
+
         if (data.npcType == TRADER_UNLIMITED) {
             if (ev.getClickedInventory() instanceof MerchantInventory && ev.getSlotType() == InventoryType.SlotType.RESULT) {
                 // player try to fetch the result item
@@ -214,74 +223,23 @@ public class TradingController implements Listener {
                         TradeData d = nyaaRecipe.getTradeData();
 
                         if (d.allowedTradeCount(mInv.getItem(0), mInv.getItem(1)) <= 0) {
-                            ev.setResult(Event.Result.DENY); // mismatch item, deny exchange
+                            ev.setResult(DENY); // mismatch item, deny exchange
                         }
                     } else {
-                        ev.setResult(Event.Result.DENY);
+                        ev.setResult(DENY);
                         plugin.getLogger().warning(String.format("NyaaNPC (%s) with non-NPC recipe: %s", m.getNpcId(), recipe));
                     }
                 } catch (NullPointerException ex) {
                     plugin.getLogger().log(Level.WARNING, "Error trade with npc: " + m.getNpcId(), ex);
                     ev.getWhoClicked().sendMessage("Internal Error: please report this bug");
-                    ev.setResult(Event.Result.DENY);
+                    ev.setResult(DENY);
                 }
             }
         } else {
             return;
+            // TODO: chest inventory
         }
     }
-
-//        if (ev.getView() == t.inventoryView) {
-//            MerchantInventory inv = (MerchantInventory) ev.getClickedInventory();
-//            ev.getWhoClicked().sendMessage("" + inv.getSelectedRecipeIndex());
-//            ev.getWhoClicked().sendMessage("" + inv.getItem(0));
-//            ev.getWhoClicked().sendMessage("" + inv.getItem(1));
-//            ev.getWhoClicked().sendMessage("" + inv.getItem(2));
-//        }
-
-//        if (data != null && (data.npcType == TRADER_BOX || data.npcType == NpcType.TRADER_UNLIMITED) &&
-//                ev.getClickedInventory() instanceof MerchantInventory && ev.getView() == t.inventoryView &&
-//                ev.getSlotType() == InventoryType.SlotType.RESULT) {
-//            MerchantInventory inv = (MerchantInventory) ev.getClickedInventory();
-//
-//            if (data.npcType == NpcType.TRADER_UNLIMITED) {
-//                TradeData td = _merchantIndex(t.merchant, inv.getSelectedRecipeIndex());
-//                ev.getWhoClicked().sendMessage("" + inv.getSelectedRecipeIndex());
-//                ev.getWhoClicked().sendMessage("" + inv.getItem(0));
-//                ev.getWhoClicked().sendMessage("" + inv.getItem(1));
-//                ev.getWhoClicked().sendMessage("" + inv.getItem(2));
-//                if (td.allowedTradeCount(inv.getItem(0), inv.getItem(1)) <= 0) ev.setResult(Event.Result.DENY);
-//            } else {
-//                ev.getWhoClicked().sendMessage(I18n.format("user.interact.type_not_support", data.npcType));
-//                ev.setResult(Event.Result.DENY);
-//            }
-//        }
-//
-//        ev.getWhoClicked().sendMessage("Clicked inv:" + ev.getClickedInventory());
-//        ev.getWhoClicked().sendMessage("Clicked view:" + ev.getView().toString());
-//        ev.getWhoClicked().sendMessage("NPCID:" + t.npcId);
-//        ev.getWhoClicked().sendMessage("InvView:" + t.inventoryView);
-//        ev.getWhoClicked().sendMessage("UUID:" + t.playerId);
-//
-//        ev.getWhoClicked().sendMessage("DUMP:" +
-//                ev.getWhoClicked() + " " +
-//                ev.getCurrentItem() + " " +
-//                ev.getCursor() + " " +
-//                ev.getClick() + " " +
-//                ev.getAction() + " " +
-//                ev.getEventName() + " " +
-//                ev.getHotbarButton() + " " +
-//                ev.getRawSlot() + " " +
-//                ev.getSlot() + " " +
-//                ev.getSlotType() + " " +
-//                ev.getResult() + " " +
-//                ev.isLeftClick() + " " +
-//                ev.isRightClick() + " " +
-//                ev.isShiftClick());
-
-
-    // TODO: chest inventory
-
 
     private final PacketListener onRightClickFakePlayer = new PacketAdapter(NyaaPlayerCoser.instance, ListenerPriority.NORMAL,
             USE_ENTITY) {
@@ -299,6 +257,10 @@ public class TradingController implements Listener {
 
                         if (hand == EnumHand.MAIN_HAND) {
                             Player p = event.getPlayer();
+                            if (!p.hasPermission("npc.interact")) {
+                                return;
+                            }
+
                             InventoryType currentInvType = p.getOpenInventory().getType();
                             if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
                                 return; // skip if the player has another inventory opened

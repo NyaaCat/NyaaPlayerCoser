@@ -15,15 +15,17 @@ public class NpcData implements ISerializable, Cloneable {
     public NpcData() {
     }
 
-    public NpcData(UUID ownerId, Location loc, String displayName, EntityType type, String nbtTag) {
-        if ((!type.isAlive() || !type.isSpawnable()) && type != EntityType.PLAYER) throw new IllegalArgumentException();
+    public NpcData(UUID ownerId, Location loc, String displayName, EntityType entityType, NpcType npcType, String nbtTag) {
+        if ((!entityType.isAlive() || !entityType.isSpawnable()) && entityType != EntityType.PLAYER)
+            throw new IllegalArgumentException();
         this.ownerId = ownerId;
         this.worldName = loc.getWorld().getName();
         this.x = loc.getX();
         this.y = loc.getY();
         this.z = loc.getZ();
         this.displayName = displayName;
-        this.type = type;
+        this.entityType = entityType;
+        this.npcType = npcType;
         this.nbtTag = nbtTag;
     }
 
@@ -75,9 +77,9 @@ public class NpcData implements ISerializable, Cloneable {
     @Serializable
     public String nbtTag;
     @Serializable
-    public EntityType type;
+    public EntityType entityType;
     @Serializable
-    public boolean enabled = true;
+    public boolean enabled = true; // TODO make it effective
     @Serializable
     public NpcType npcType = NpcType.TRADER_UNLIMITED;
 
@@ -95,6 +97,9 @@ public class NpcData implements ISerializable, Cloneable {
     @Serializable
     public int chestZ = 0;
 
+    // meaningful for HEH_SELL_SHOP
+    public UUID hehShopOwnerUUID;
+
     public int chunkX() {
         return ((int) Math.floor(x)) >> 4;
     }
@@ -104,9 +109,16 @@ public class NpcData implements ISerializable, Cloneable {
     }
 
     @Override
-    protected Object clone() throws CloneNotSupportedException {
-        NpcData cloned = (NpcData) (super.clone());
-        // TODO: deep clone
-        return cloned;
+    public NpcData clone() {
+        try {
+            NpcData cloned = (NpcData) (super.clone());
+            if (this.trades != null) {
+                cloned.trades = new ArrayList<>();
+                cloned.trades.addAll(this.trades);
+            }
+            return cloned;
+        } catch (CloneNotSupportedException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

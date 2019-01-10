@@ -1,5 +1,6 @@
 package cat.nyaa.npc.persistence;
 
+import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.configuration.ISerializable;
 import org.bukkit.inventory.ItemStack;
 
@@ -54,5 +55,14 @@ public class TradeData implements ISerializable {
         int c1 = slot1.getAmount() / item1.getAmount();
         int c2 = (slot2 == null || slot2.getType() == AIR) ? Integer.MAX_VALUE : (slot2.getAmount() / item2.getAmount());
         return Math.min(c1, c2);
+    }
+
+    public Message appendDescription(Message msg) {
+        msg.append(item1 == null ? new ItemStack(AIR) : item1.clone());
+        msg.append(" + ");
+        msg.append(item2 == null ? new ItemStack(AIR) : item2.clone());
+        msg.append(" => ");
+        msg.append(result == null ? new ItemStack(AIR) : result.clone());
+        return msg;
     }
 }

@@ -68,7 +68,7 @@ public class NPCPlayer extends NPCBase {
 
     public NPCPlayer(String id, NpcData data) {
         super(id, data);
-        if (data.type != EntityType.PLAYER) throw new IllegalArgumentException("not a player npc");
+        if (data.entityType != EntityType.PLAYER) throw new IllegalArgumentException("not a player npc");
         profile = new WrappedGameProfile(getVersion2UUID(), data.displayName);
         dataWatcher = new WrappedDataWatcher();
         // https://wiki.vg/Entity_metadata#Entity
@@ -104,8 +104,8 @@ public class NPCPlayer extends NPCBase {
                 pktSpawn.getDataWatcherModifier().write(0, dataWatcher);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktSpawn);
 
-                //pktList.getEnumModifier(EnumWrappers.PlayerInfoAction.class, 0).write(0, EnumWrappers.PlayerInfoAction.REMOVE_PLAYER);
-                //ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
+                pktList.getEnumModifier(EnumWrappers.PlayerInfoAction.class, 0).write(0, EnumWrappers.PlayerInfoAction.REMOVE_PLAYER);
+                ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
             } catch (ReflectiveOperationException ex) {
                 p.sendMessage("npc spawn fail. please report the bug");
                 ex.printStackTrace();
@@ -194,12 +194,7 @@ public class NPCPlayer extends NPCBase {
     }
 
     @Override
-    public void resetLocation() {
-
-    }
-
-    @Override
-    public boolean doSanityCheck() {
-        return false;
+    public SanityCheckResult doSanityCheck() {
+        return SanityCheckResult.SKIPPED;
     }
 }

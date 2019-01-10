@@ -2,24 +2,70 @@ user:
   bad_id: "No NPC corresponds to this id."
   empty_slot: "Slot %s is empty."
   spawn:
-    type_disallow: NPC type %s is not allowed.
+    type_disallow: EntityType %s is not allowed.
+    npctype_disallow: NpcType %s is not allowed.
     not_block: NPCs must be placed on blocks.
     not_enough_space: There's not enough space for the NPC.
     id_created: "New NPC ID is: %s"
-  info:
-    no_selection: You should provide an id or be near to an NPC.
-    msg_id: "NPC ID: %s"
-    msg_name: "NPC Name: %s"
-    msg_type: "NPC EntityType: %s"
-    msg_npctype: "NPC Type: %s"
-    msg_loc: "NPC Location: %s"
-    msg_trade: "NPC Trade: %s"
-    msg_no_trade: "NPC has no trade"
-  list:
-    no_npc: No NPC exists.
-    msg: "%s [id=%s, type=%s, npctype=%s]"
-  newtrade:
-    id_created: "New trade ID is: %s"
+  edit:
+    help_msg: |-
+      Usage: /npc edit <npcId> [key:value] ...
+      Supported keys:
+        name       : String.          NPC display name
+        npctype    : Enum NpcType.    NPC type
+        entitytype : Enum EntityType. NPC entity type
+        owner      : UUID.     Owner of the npc
+        hehowner   : UUID.     The HEH shop to be opened
+        nbt        : String.   NBT tag
+        location   : String.   Only accepts "me" for now.
+                               Make NPC's location the same as the player's.
+        trade      : String.   Create new trade from slot 1/2/3  : trade:+
+                               Reuse existing trade              : trade:+<existing_trade_name>
+                               Remove trade                      : trade:-<trade_name>
+    invalid_uuid: "Not a valid uuid: %s"
+    invalid_location: "Not a valid location: only 'me' is accepted for now"
+
+    trade_id_created: "New trade ID is: %s"
+    trade_id_notfound: "Trade ID (%s) not found"
+    trade_op_invalid: "Invalid trade operation"
+
+    updated: "NPC updated"
+    not_updated: "NPC not changed"
+  inspect:
+    invalid_command: "Invalid type to be inspected: %s"
+    trade:
+      no_trade: "Trade `%s` not found."
+      item1: "Required item1: "
+      item2: "Required item2: "
+      result: "Result item: "
+      item_given: "You've been given the items for further inspection"
+    npc:
+      msg_id: "NPC ID: %s"
+      msg_name: "NPC Name: %s"
+      msg_entitytype: "NPC EntityType: %s"
+      msg_npctype: "NPC Type: %s"
+      msg_loc: "NPC Location: %s"
+      msg_chest_loc: "Linked chest Location: %s"
+      msg_nbt: "NPC NBT data: %s"
+      msg_owner: "Owner: %s(%s)"
+      msg_hehowner: "HEH Owner: %s(%s)"
+
+      msg_trade_head: "NPC Trades:"
+      msg_trade_notfound: "  %s: not found"
+      msg_no_trade: "NPC has no trade"
+
+      eph_notfound: "No record found in EntitiesManager. May be a bug?"
+      eph_entity: "Spawned entity: %s"
+      eph_merchant_header: "Active merchant(s):"
+      eph_merchant_item: "  %s : %s(%s)"
+    nearby:
+      cursor: "NPC under cursor: %s"
+      no_cursor: "No NPC found under cursor."
+      found: "Nearby NPC: %s"
+      not_found: "No more NPC found in range."
+
+
+
   chest:
     status: "This NPC is linked to a chest: %s"
     unlimited: "This NPC has unlimited inventory: %s"
@@ -47,10 +93,6 @@ user:
     sampling_ok: "Sampling NPC location [x:%.2f, y:$.2f, z:$.2f]. Location match."
     success: "NPC location updated. New location [x:%.2f, y:$.2f, z:$.2f]"
     fail: "NPC changes its location too frequently, cannot determine the stable location."
-  inspect:
-    invalid_command: "Invalid type to be inspected: %s"
-    trade:
-      no_trade: "Trade `%s` not found."
 
 manual:
   help:
@@ -59,33 +101,28 @@ manual:
   reload:
     description: Reload plugin
     usage: /npc reload
+  import:
+    description: Import Shopkeepers save.yml
+    usage: /npc import
   spawn:
     description: Define new NPC, will be placed at cursor
-    usage: /npc spawn <NpcType> <NpcName> [EntitydataTag]
-  info:
-    description: Show NPC info, by id or by cursor position [deprecated]
-    usage: /npc info [npcId]
+    usage: /npc spawn <EntityType> <NpcType> <NpcName> [EntitydataTag]
   remove:
     description: Remove NPC by ID
     usage: /npc remove <npcId>
-  rename:
-    description: Rename NPC by ID
-    usage: /npc rename <npcId> <newNpcName>
-  modify:
-    description: Modify NPC
-    usage: /npc modify <npcId> [name:<new_name>] [npctype:<npctype>] ...
-  chest:
-    description: Show/edit the related chest info
-    usage: /npc chest <npcId> [link|unlink]
+  edit:
+    description: Edit current NPC
+    usage: /npc edit help
+  inspect:
+    description: Inspect NPC or trade definitions.
+    usage: /npc inspect <trade|npc|nearby> [id|range]
   list:
     description: List all NPCs
     usage: /npc list
-  newtrade:
-    description: Add a trade to the NPC according to the inventory slot 1,2,3
-    usage: /npc newtrade <npcId>
+
+  chest:
+    description: Show/edit the related chest info
+    usage: /npc chest <npcId> [link|unlink]
   adjust_location:
     description: Automatically adjust NPC location.
     usage: /npc adjust_location <npcId>
-  inspect:
-    description: Inspect NPC or trade definitions.
-    usage: /npc inspect <trade|npc> [id]
