@@ -409,6 +409,8 @@ public class EntitiesManager implements Listener {
         }
     }
 
+    private int viewDstSq = Bukkit.getServer().getViewDistance() * Bukkit.getServer().getViewDistance() * 4;
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent ev) {
         Location playerLoc = ev.getTo();
@@ -416,7 +418,7 @@ public class EntitiesManager implements Listener {
             if (npc.data.entityType == EntityType.PLAYER && npc.data.worldName.equals(playerLoc.getWorld().getName())) {
                 double dst = Math.pow(playerLoc.getX() - npc.data.x, 2) +
                         Math.pow(playerLoc.getZ() - npc.data.z, 2);
-                if (dst > 9) {
+                if (dst > viewDstSq) {
                     npc.onPlayerLeaveRange(ev.getPlayer());
                 } else {
                     npc.onPlayerEnterRange(ev.getPlayer());

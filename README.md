@@ -14,5 +14,10 @@ NyaaPlayerCoser (NPC) plugin.
     /npc inspect nearby 5
     /npc inspect npc 0
     /npc inspect trade 0
-     
     
+Custom skin if NPC's entity type is `PLAYER`. Skin info can be obtained from [https://mineskin.org/](https://mineskin.org/)
+
+    /npc spawn PLAYER TRADER_UNLIMITED <npc_id>
+    /npc skin add <skin_id> <texture_value> <texture_signature>
+    /npc edit <npc_id> skin:<skin_id>
+    /npc edit <npc_id> skin:default

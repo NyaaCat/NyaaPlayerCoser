@@ -17,6 +17,7 @@ user:
         owner      : UUID.     Owner of the npc
         hehowner   : UUID.     The HEH shop to be opened
         nbt        : String.   NBT tag
+        skin       : String.   Skin of the NPC if entitytype is PLAYER
         location   : String.   Only accepts "me" for now.
                                Make NPC's location the same as the player's.
         trade      : String.   Create new trade from slot 1/2/3  : trade:+
@@ -28,6 +29,9 @@ user:
     trade_id_created: "New trade ID is: %s"
     trade_id_notfound: "Trade ID (%s) not found"
     trade_op_invalid: "Invalid trade operation"
+
+    skin_entity_not_player: "NOTE: entitytype is not PLAYER, skin has no effect"
+    skin_notfound: "Skin \"%s\" not found. Use \"/npc skin add\" to add a skin."
 
     updated: "NPC updated"
     not_updated: "NPC not changed"
@@ -63,6 +67,12 @@ user:
       no_cursor: "No NPC found under cursor."
       found: "Nearby NPC: %s"
       not_found: "No more NPC found in range."
+  skin:
+    exists: "SkinId %s already exists"
+    notfound: "SkinId %s not found"
+    list_no_desc: "NO DESCRIPTION"
+    list: "- {{id}}: {{desc}}: displayMask: {{mask}}, associated player: {{uuid}}"
+
 
 
 
@@ -119,6 +129,19 @@ manual:
   list:
     description: List all NPCs
     usage: /npc list
+  skin:
+    description: Modify stored NPC skins
+    usage: /npc skin <subcommand> help
+    add:
+      description: Add new skin with texture value and signature
+      usage: /npc skin add <newId> <texture_value> <signature> [description]
+    setdefault:
+      description: Set a certain skin as default skin
+      usage: /npc skin setdefault <skinId>
+    list:
+      description: List all skins.
+      usage: /npc skin list
+
 
   chest:
     description: Show/edit the related chest info

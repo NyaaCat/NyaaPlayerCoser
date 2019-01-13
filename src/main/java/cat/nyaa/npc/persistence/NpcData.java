@@ -98,7 +98,12 @@ public class NpcData implements ISerializable, Cloneable {
     public int chestZ = 0;
 
     // meaningful for HEH_SELL_SHOP
+    @Serializable
     public UUID hehShopOwnerUUID;
+
+    // meaningful for entityType == PLAYER
+    @Serializable
+    public String playerSkin = "default";
 
     public int chunkX() {
         return ((int) Math.floor(x)) >> 4;

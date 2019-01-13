@@ -1,7 +1,9 @@
 package cat.nyaa.npc.ephemeral;
 
 import cat.nyaa.npc.ExternalPluginUtils;
+import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.npc.persistence.NpcData;
+import cat.nyaa.npc.persistence.SkinData;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.*;
@@ -70,10 +72,14 @@ public class NPCPlayer extends NPCBase {
         super(id, data);
         if (data.entityType != EntityType.PLAYER) throw new IllegalArgumentException("not a player npc");
         profile = new WrappedGameProfile(getVersion2UUID(), data.displayName);
+        SkinData skin = NyaaPlayerCoser.instance.cfg.skinData.getSkinData(data.playerSkin);
+        profile.getProperties().put("textures", new WrappedSignedProperty("textures", skin.texture_value, skin.texture_signature));
+
         dataWatcher = new WrappedDataWatcher();
         // https://wiki.vg/Entity_metadata#Entity
         // https://github.com/dmulloy2/ProtocolLib/issues/160#issuecomment-192983554
-        dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(10, WrappedDataWatcher.Registry.get(Integer.class)), 3);
+        //dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(10, WrappedDataWatcher.Registry.get(Integer.class)), 3);
+        dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(13, WrappedDataWatcher.Registry.get(Byte.class)), Byte.valueOf((byte) skin.displayMask));
 
         World w = Bukkit.getWorld(data.worldName);
         if (w == null) throw new IllegalArgumentException();
@@ -104,8 +110,17 @@ public class NPCPlayer extends NPCBase {
                 pktSpawn.getDataWatcherModifier().write(0, dataWatcher);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktSpawn);
 
-                pktList.getEnumModifier(EnumWrappers.PlayerInfoAction.class, 0).write(0, EnumWrappers.PlayerInfoAction.REMOVE_PLAYER);
-                ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
+                Bukkit.getScheduler().runTaskLater(NyaaPlayerCoser.instance, new Runnable() {
+                    @Override
+                    public void run() { // when client about to spawn the player, it still need the gameprofile from the list. so we cannot remove it early.
+                        pktList.getEnumModifier(EnumWrappers.PlayerInfoAction.class, 0).write(0, EnumWrappers.PlayerInfoAction.REMOVE_PLAYER);
+                        try {
+                            ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
+                        } catch (InvocationTargetException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+                }, 10L);
             } catch (ReflectiveOperationException ex) {
                 p.sendMessage("npc spawn fail. please report the bug");
                 ex.printStackTrace();

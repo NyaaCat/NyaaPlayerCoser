@@ -25,6 +25,7 @@ permissions:
       npc.command.inspect: true
       npc.command.import: true
       npc.command.reload: true
+      npc.command.skin: true
   npc.player:
     description: Permissions for players
     default: op

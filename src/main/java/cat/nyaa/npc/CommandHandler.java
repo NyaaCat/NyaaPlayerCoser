@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.bukkit.entity.EntityType.PLAYER;
+
 public class CommandHandler extends CommandReceiver {
     private final NyaaPlayerCoser plugin;
 
@@ -44,6 +46,9 @@ public class CommandHandler extends CommandReceiver {
     public String getHelpPrefix() {
         return "";
     }
+
+    @SubCommand(value = "skin", permission = "npc.command.skin")
+    public CommandHandlerSkin commandSkin;
 
     @SubCommand(value = "reload", permission = "npc.command.reload")
     public void reloadCommand(CommandSender sender, Arguments args) {
@@ -167,6 +172,22 @@ public class CommandHandler extends CommandReceiver {
         String nbt = args.argString("nbt", null);
         if (nbt != null) {
             data.nbtTag = nbt;
+            modified = true;
+        }
+
+        String skinId = args.argString("skin", null);
+        if (skinId != null) {
+            if (data.entityType != PLAYER) {
+                msg(sender, "user.edit.skin_entity_not_player");
+            }
+            if (skinId.equals("")) {
+                data.playerSkin = "default";
+            } else if (plugin.cfg.skinData.hasSkinData(skinId)) {
+                data.playerSkin = skinId;
+            } else {
+                msg(sender, "user.edit.skin_notfound", skinId);
+                return;
+            }
             modified = true;
         }
 

@@ -28,4 +28,8 @@ public class I18n extends LanguageRepository {
     public static String format(String key, Object... args) {
         return instance.getFormatted(key, args);
     }
+
+    public static String substitute(String key, Object... args) {
+        return instance.getSubstituted(key, args);
+    }
 }

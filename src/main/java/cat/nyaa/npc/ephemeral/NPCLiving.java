@@ -52,7 +52,7 @@ public class NPCLiving extends NPCBase {
 
         // spawn
         LivingEntity e = (LivingEntity) w.spawn(loc, data.entityType.getEntityClass(),
-                ee->ee.addScoreboardTag(NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG));
+                ee -> ee.addScoreboardTag(NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG));
         if (data.nbtTag != null && data.nbtTag.length() > 0) {
             NmsUtils.setEntityTag(e, data.nbtTag);
         }

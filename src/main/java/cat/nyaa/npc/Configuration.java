@@ -1,6 +1,7 @@
 package cat.nyaa.npc;
 
 import cat.nyaa.npc.persistence.NpcDataConfig;
+import cat.nyaa.npc.persistence.SkinDataConfig;
 import cat.nyaa.npc.persistence.TradeDataConfig;
 import cat.nyaa.nyaacore.configuration.PluginConfigure;
 import org.bukkit.entity.EntityType;
@@ -16,6 +17,8 @@ public class Configuration extends PluginConfigure {
         this.plugin = plugin;
         this.npcData = new NpcDataConfig(plugin);
         this.tradeData = new TradeDataConfig(plugin);
+        this.skinData = new SkinDataConfig(plugin);
+
         for (EntityType t : EntityType.values()) {
             if (t.isSpawnable() && t.isAlive()) {
                 allowedEntityType.add(t.name());
@@ -39,6 +42,8 @@ public class Configuration extends PluginConfigure {
     public NpcDataConfig npcData;
     @StandaloneConfig
     public TradeDataConfig tradeData;
+    @StandaloneConfig
+    public SkinDataConfig skinData;
 
     // helper functions
 
