@@ -33,6 +33,7 @@ permissions:
     description: Permissions for players
     default: op
     children:
+      npc.command: true
       npc.command.hehshop: true
   npc.interact:
     description: Permission required to interact with NPCs

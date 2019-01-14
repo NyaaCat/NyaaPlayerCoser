@@ -1,6 +1,7 @@
 package cat.nyaa.npc.persistence;
 
 import cat.nyaa.nyaacore.configuration.ISerializable;
+import com.mojang.authlib.properties.Property;
 
 import java.util.UUID;
 
@@ -21,7 +22,13 @@ public class SkinData implements ISerializable, Cloneable {
     public SkinData() {
     }
 
+    public SkinData(String key, String desc, Property texture, UUID follow) {
+        this(key, desc, texture.getValue(), texture.getSignature());
+        this.followPlayer = follow;
+    }
+
     public SkinData(String key, String description, String texture_value, String texture_signature) {
+        if (key == null || texture_value == null || texture_signature == null) throw new IllegalArgumentException();
         this.key = key;
         this.description = description;
         this.texture_value = texture_value;

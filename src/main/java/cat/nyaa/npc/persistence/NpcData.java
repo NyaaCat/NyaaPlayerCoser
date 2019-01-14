@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +52,10 @@ public class NpcData implements ISerializable, Cloneable {
         Material m = l.getBlock().getType();
         if (m != Material.CHEST && m != Material.TRAPPED_CHEST && m != Material.SHULKER_BOX) return null; // TODO warn
         return l;
+    }
+
+    public Vector getLocationVector() {
+        return new Vector(x, y, z);
     }
 
     /**

@@ -409,7 +409,21 @@ public class EntitiesManager implements Listener {
         }
     }
 
-    private int viewDstSq = Bukkit.getServer().getViewDistance() * Bukkit.getServer().getViewDistance() * 4;
+
+    private Map<String, Integer> playerViewDistanceSqPerWorld = new HashMap<>();
+
+    private int getViewDistanceSquared(World w) {
+        String worldname = w.getName();
+        Integer ret = playerViewDistanceSqPerWorld.get(worldname);
+        if (ret == null) {
+            int def = Bukkit.spigot().getConfig().getInt("world-settings.default.entity-tracking-range.players", 48);
+            int r = Bukkit.spigot().getConfig().getInt("world-settings." + worldname + ".entity-tracking-range.players", def);
+            playerViewDistanceSqPerWorld.put(worldname, r * r);
+            return r * r;
+        } else {
+            return ret;
+        }
+    }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent ev) {
@@ -418,7 +432,7 @@ public class EntitiesManager implements Listener {
             if (npc.data.entityType == EntityType.PLAYER && npc.data.worldName.equals(playerLoc.getWorld().getName())) {
                 double dst = Math.pow(playerLoc.getX() - npc.data.x, 2) +
                         Math.pow(playerLoc.getZ() - npc.data.z, 2);
-                if (dst > viewDstSq) {
+                if (dst > getViewDistanceSquared(playerLoc.getWorld())) {
                     npc.onPlayerLeaveRange(ev.getPlayer());
                 } else {
                     npc.onPlayerEnterRange(ev.getPlayer());

@@ -73,6 +73,8 @@ user:
     notfound: "SkinId %s not found"
     list_no_desc: "NO DESCRIPTION"
     list: "- {{id}}: {{desc}}: displayMask: {{mask}}, associated player: {{uuid}}"
+    pin_fail: "Failed to pin player skin."
+    pin_success: "Player skin pinned."
   hehshop:
     remove_need_cursor: "You must look at your NPC."
     remove_unprivileged: "You are not allowed to remove this NPC."
@@ -148,6 +150,9 @@ manual:
     list:
       description: List all skins.
       usage: /npc skin list
+    pin:
+      description: Pin a player's current skin
+      usage: /npc skin pin <playerName> [follow:bool] [skinId]
   hehshop:
     description: Create a NPC which opens up your HEH shop
     usage: /npc hehshop [remove]

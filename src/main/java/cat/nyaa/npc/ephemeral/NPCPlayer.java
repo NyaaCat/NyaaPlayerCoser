@@ -7,6 +7,7 @@ import cat.nyaa.npc.persistence.SkinData;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.*;
+import net.minecraft.server.v1_13_R2.EntityEgg;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -123,7 +124,7 @@ public class NPCPlayer extends NPCBase {
                             throw new RuntimeException(ex);
                         }
                     }
-                }, 10L);
+                }, NyaaPlayerCoser.instance.cfg.tabListDelay);
             } catch (ReflectiveOperationException ex) {
                 p.sendMessage("npc spawn fail. please report the bug");
                 ex.printStackTrace();
@@ -171,10 +172,15 @@ public class NPCPlayer extends NPCBase {
         }
     }
 
+    private static int nextEntityId() {
+        EntityEgg eg = new EntityEgg(null, 0, 0, 0);
+        return eg.getId();
+    }
+
     @Override
     public void spawn() {
         spawned = true;
-        entityId = rnd.nextInt(); // FIXME: potential duplicated entityId
+        entityId = nextEntityId();
         spawnedDummyNPCs.put(entityId, this);
     }
 
@@ -203,7 +209,7 @@ public class NPCPlayer extends NPCBase {
     @Override
     public Location getEyeLocation() {
         if (!spawned || inRangePlayers.isEmpty()) return null;
-        return loc.clone().add(0, 1.6, 0);
+        return loc.clone().add(0, 1.62, 0);
     }
 
     @Override

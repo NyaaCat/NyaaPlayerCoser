@@ -38,6 +38,8 @@ public class Configuration extends PluginConfigure {
     public String language = "en_US";
     @Serializable
     public List<String> allowedEntityType = new ArrayList<>();
+    @Serializable
+    public int tabListDelay = 15;
     @StandaloneConfig
     public NpcDataConfig npcData;
     @StandaloneConfig

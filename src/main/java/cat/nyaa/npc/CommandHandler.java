@@ -597,10 +597,13 @@ public class CommandHandler extends CommandReceiver {
             }
 
             Location spawnLocation = b.getLocation().clone().add(.5, /* TODO: NmsUtils.getBlockHeight(b) */ 1, .5);
-            for (Entity e : spawnLocation.getWorld().getNearbyEntities(spawnLocation, 0.25, 0.25, 0.25)) {
-                if (NPCBase.isNyaaNPC(e)) {
-                    msg(sender, "user.hehshop.add_too_close");
-                    return;
+            for (NPCBase base : plugin.entitiesManager.idNpcMapping.values()) {
+                NpcData data = base.data;
+                if (data.worldName.equals(spawnLocation.getWorld().getName())) {
+                    if (data.getLocationVector().distanceSquared(spawnLocation.toVector()) < 0.2) {
+                        msg(sender, "user.hehshop.add_too_close");
+                        return;
+                    }
                 }
             }
 
