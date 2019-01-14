@@ -71,6 +71,9 @@ public class NPCPlayer extends NPCBase {
     public NPCPlayer(String id, NpcData data) {
         super(id, data);
         if (data.entityType != EntityType.PLAYER) throw new IllegalArgumentException("not a player npc");
+
+        if (data.displayName.length() > 16) data.displayName = data.displayName.substring(0, 16); // guard
+
         profile = new WrappedGameProfile(getVersion2UUID(), data.displayName);
         SkinData skin = NyaaPlayerCoser.instance.cfg.skinData.getSkinData(data.playerSkin);
         profile.getProperties().put("textures", new WrappedSignedProperty("textures", skin.texture_value, skin.texture_signature));

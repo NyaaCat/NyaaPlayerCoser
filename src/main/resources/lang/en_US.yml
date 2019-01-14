@@ -1,6 +1,7 @@
 user:
   bad_id: "No NPC corresponds to this id."
   empty_slot: "Slot %s is empty."
+  playername_length_error: "Player name should be in between 3 and 16. "
   spawn:
     type_disallow: EntityType %s is not allowed.
     npctype_disallow: NpcType %s is not allowed.

@@ -88,6 +88,11 @@ public class CommandHandler extends CommandReceiver {
             throw new BadCommandException("user.spawn.not_enough_space");
         }
 
+        if (entityType == PLAYER && (name.length() > 16 || name.length() < 3)) {
+            msg(sender, "user.playername_length_error");
+            return;
+        }
+
         NpcData data = new NpcData(
                 asPlayer(sender).getUniqueId(),
                 b.getLocation().clone().add(.5, /* TODO: NmsUtils.getBlockHeight(b) */ 1, .5),
@@ -117,6 +122,11 @@ public class CommandHandler extends CommandReceiver {
 
         String newName = args.argString("name", null);
         if (newName != null) {
+            if (data.entityType == PLAYER && (newName.length() > 16 || newName.length() < 3)) {
+                msg(sender, "user.playername_length_error");
+                return;
+            }
+
             data.displayName = ChatColor.translateAlternateColorCodes('&', newName);
             modified = true;
         }
@@ -142,6 +152,12 @@ public class CommandHandler extends CommandReceiver {
             if (!plugin.cfg.isAllowedType(et)) {
                 msg(sender, "user.spawn.type_disallow", et.name());
             } else {
+
+                if (et == PLAYER && (data.displayName.length() > 16 || data.displayName.length() < 3)) {
+                    msg(sender, "user.playername_length_error");
+                    return;
+                }
+
                 data.entityType = et;
                 modified = true;
             }
@@ -598,7 +614,7 @@ public class CommandHandler extends CommandReceiver {
                 plugin.cfg.skinData.updateSkinData(skinDataId, sd);
             }
 
-            NpcData data = new NpcData(p.getUniqueId(), spawnLocation, p.getDisplayName(), PLAYER, NpcType.HEH_SELL_SHOP, "");
+            NpcData data = new NpcData(p.getUniqueId(), spawnLocation, p.getName(), PLAYER, NpcType.HEH_SELL_SHOP, "");
             data.hehShopOwnerUUID = data.ownerId;
             data.playerSkin = skinDataId;
             String npcId = plugin.entitiesManager.createNpcDefinition(data);
