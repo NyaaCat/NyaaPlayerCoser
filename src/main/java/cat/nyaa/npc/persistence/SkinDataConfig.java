@@ -91,4 +91,9 @@ public class SkinDataConfig extends FileConfigure {
         skinDataMap.put(name, new SkinData(name, desc, val, sig));
         save();
     }
+
+    public void updateSkinData(String key, SkinData data) {
+        skinDataMap.put(key, data);
+        save();
+    }
 }

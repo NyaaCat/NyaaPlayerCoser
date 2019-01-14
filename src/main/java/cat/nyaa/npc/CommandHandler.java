@@ -2,15 +2,14 @@ package cat.nyaa.npc;
 
 import cat.nyaa.npc.ephemeral.NPCBase;
 import cat.nyaa.npc.ephemeral.NyaaMerchant;
-import cat.nyaa.npc.persistence.DataImporter;
-import cat.nyaa.npc.persistence.NpcData;
-import cat.nyaa.npc.persistence.NpcType;
-import cat.nyaa.npc.persistence.TradeData;
+import cat.nyaa.npc.persistence.*;
 import cat.nyaa.nyaacore.CommandReceiver;
 import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.utils.ClickSelectionUtils;
 import cat.nyaa.nyaacore.utils.ItemStackUtils;
 import cat.nyaa.nyaacore.utils.RayTraceUtils;
+import com.google.common.collect.Iterables;
+import com.mojang.authlib.properties.Property;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -18,6 +17,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.craftbukkit.v1_13_R2.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -266,6 +266,24 @@ public class CommandHandler extends CommandReceiver {
             ret = currentMobEntity;
         }
         return ret;
+    }
+
+    private NPCBase getLookatNPC(Location eyeLocation) {
+        NPCBase candidate = null;
+        double minAngle = Math.PI/4D; // 45 degrees
+        Vector eyeSight = eyeLocation.getDirection();
+
+        for (NPCBase npc : plugin.entitiesManager.idNpcMapping.values()) {
+            Location npcHeadLocation = npc.getEyeLocation();
+            if (npcHeadLocation == null) continue;
+            Vector mobVector = npcHeadLocation.toVector().subtract(eyeLocation.toVector());
+            double angle = getVectorAngle(eyeSight, mobVector);
+            if (!Double.isFinite(angle)) continue;
+            if (angle >= minAngle) continue;
+            minAngle = angle;
+            candidate = npc;
+        }
+        return candidate;
     }
 
     private String _shortNpcDescription(String npcId) {
@@ -530,5 +548,61 @@ public class CommandHandler extends CommandReceiver {
             throw new BadCommandException("user.bad_id");
         }
         return data;
+    }
+
+
+    /* ******************************************* */
+    /* Specialized commands for unprivileged users */
+    /* ******************************************* */
+    @SubCommand(value = "hehshop", permission = "npc.command.hehshop")
+    public void hehShopCommand(CommandSender sender, Arguments args) {
+        if ("remove".equalsIgnoreCase(args.next())) {
+            NPCBase npc = getLookatNPC(asPlayer(sender).getEyeLocation());
+            if (npc == null) {
+                msg(sender, "user.hehshop.remove_need_cursor");
+                return;
+            }
+
+            String id = npc.id;
+            NpcData data =npc.data;
+            Player p = asPlayer(sender);
+            UUID pid = p.getUniqueId();
+            if (pid.equals(data.ownerId) && pid.equals(data.hehShopOwnerUUID) && data.npcType == NpcType.HEH_SELL_SHOP) {
+                plugin.entitiesManager.removeNpcDefinition(id);
+                msg(sender, "user.hehshop.remove_success");
+            } else {
+                msg(sender, "user.hehshop.remove_unprivileged");
+            }
+        } else {
+            Player p = asPlayer(sender);
+            Block b = getRayTraceBlock(sender);
+            if (b == null || b.getType() == Material.AIR) {
+                throw new BadCommandException("user.spawn.not_block");
+            }
+
+            Location spawnLocation = b.getLocation().clone().add(.5, /* TODO: NmsUtils.getBlockHeight(b) */ 1, .5);
+            for (Entity e : spawnLocation.getWorld().getNearbyEntities(spawnLocation, 0.25, 0.25, 0.25)) {
+                if (NPCBase.isNyaaNPC(e)) {
+                    msg(sender, "user.hehshop.add_too_close");
+                    return;
+                }
+            }
+
+            CraftPlayer cp = (CraftPlayer) p;
+            Property texture = Iterables.getFirst(cp.getProfile().getProperties().get("textures"), null);
+            String skinDataId = "default";
+            if (texture != null) {
+                skinDataId = "hehshop:" + p.getUniqueId().toString();
+                SkinData sd = new SkinData(skinDataId, p.getName() + "'s HEH NPC shop", texture.getValue(), texture.getSignature());
+                sd.followPlayer = p.getUniqueId();
+                plugin.cfg.skinData.updateSkinData(skinDataId, sd);
+            }
+
+            NpcData data = new NpcData(p.getUniqueId(), spawnLocation, p.getDisplayName(), PLAYER, NpcType.HEH_SELL_SHOP, "");
+            data.hehShopOwnerUUID = data.ownerId;
+            data.playerSkin = skinDataId;
+            String npcId = plugin.entitiesManager.createNpcDefinition(data);
+            msg(sender, "user.hehshop.add_success");
+        }
     }
 }
