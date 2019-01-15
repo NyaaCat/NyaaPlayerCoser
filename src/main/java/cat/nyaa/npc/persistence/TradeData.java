@@ -34,14 +34,6 @@ public class TradeData implements ISerializable {
     @Serializable
     public ItemStack result;
 
-    private boolean exactMatch(ItemStack s1, ItemStack s2) {
-        ItemStack d1 = s1 == null ? new ItemStack(AIR) : s1.clone();
-        ItemStack d2 = s2 == null ? new ItemStack(AIR) : s2.clone();
-        d1.setAmount(1);
-        d2.setAmount(1);
-        return d1.equals(d2);
-    }
-
     /**
      * How many times this trade can be done.
      * This function does not consider the inventory if npctype is TRADER_BOX
@@ -51,10 +43,18 @@ public class TradeData implements ISerializable {
      * @return -1 item type mismatch; 0 not enough materials; x>0 this trade can be done at most x times.
      */
     public int allowedTradeCount(ItemStack slot1, ItemStack slot2) {
-        if (!exactMatch(slot1, item1) || !exactMatch(slot2, item2)) return -1;
+        if (slot1 == null || slot1.getType() == AIR) return -1;
+        if (!slot1.isSimilar(item1)) return -1;
         int c1 = slot1.getAmount() / item1.getAmount();
-        int c2 = (slot2 == null || slot2.getType() == AIR) ? Integer.MAX_VALUE : (slot2.getAmount() / item2.getAmount());
-        return Math.min(c1, c2);
+
+        if (item2 != null && item2.getType() != AIR) {
+            if (slot2 == null || slot2.getType() == AIR) return -1;
+            if (!slot2.isSimilar(item2)) return -1;
+            int c2 = slot2.getAmount() / item2.getAmount();
+            return c1 < c2 ? c1 : c2;
+        } else {
+            return c1;
+        }
     }
 
     public Message appendDescription(Message msg) {
