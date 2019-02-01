@@ -81,11 +81,15 @@ public class CommandHandler extends CommandReceiver {
         if (entitydataTag == null) entitydataTag = "";
 
         Block b = getRayTraceBlock(sender);
-        if (b == null || b.getType() == Material.AIR) {
+        if (b == null || b.isEmpty()) {
             throw new BadCommandException("user.spawn.not_block");
         }
         if (b.getRelative(BlockFace.UP).getType().isSolid() || b.getRelative(0, 2, 0).getType().isSolid()) {
             throw new BadCommandException("user.spawn.not_enough_space");
+        }
+        Location loc = b.getLocation().clone().add(.5, 0, .5);
+        if (!b.isPassable()) {
+            loc.setY(b.getBoundingBox().getMaxY());
         }
 
         if (entityType == PLAYER && (name.length() > 16 || name.length() < 3)) {
@@ -95,7 +99,7 @@ public class CommandHandler extends CommandReceiver {
 
         NpcData data = new NpcData(
                 asPlayer(sender).getUniqueId(),
-                b.getLocation().clone().add(.5, /* TODO: NmsUtils.getBlockHeight(b) */ 1, .5),
+                loc,
                 name, entityType, npctype, entitydataTag);
         data.hehShopOwnerUUID = data.ownerId;
         String npcId = plugin.entitiesManager.createNpcDefinition(data);
