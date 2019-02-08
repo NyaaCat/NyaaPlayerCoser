@@ -402,6 +402,7 @@ public class CommandHandler extends CommandReceiver {
             }
         } else if ("trade".equalsIgnoreCase(subcommand)) {
             String id = args.nextString();
+            boolean verbose = "verbose".equalsIgnoreCase(args.top());
             TradeData tradeData = plugin.cfg.tradeData.tradeList.get(id);
             if (tradeData == null) {
                 throw new BadCommandException("user.inspect.trade.no_trade", id);
@@ -413,6 +414,8 @@ public class CommandHandler extends CommandReceiver {
                 new Message(I18n.format("user.inspect.trade.item2")).append(tradeData.item2.clone()).send(sender);
             if (tradeData.result != null)
                 new Message(I18n.format("user.inspect.trade.result")).append(tradeData.result.clone()).send(sender);
+            if (verbose)
+                sender.sendMessage(tradeData.toString());
 
             if (sender instanceof Player) {
                 Player p = asPlayer(sender);

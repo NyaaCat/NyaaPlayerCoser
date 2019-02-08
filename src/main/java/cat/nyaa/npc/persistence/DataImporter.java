@@ -60,10 +60,12 @@ public class DataImporter {
             idxName = "sk-" + skRecipeIndex;
         }
 
-        ItemStack item1 = sec.getItemStack("item1", new ItemStack(Material.AIR));
-        ItemStack item2 = sec.getItemStack("item2", new ItemStack(Material.AIR));
-        ItemStack result = sec.getItemStack("resultItem", new ItemStack(Material.AIR));
-        TradeData td = new TradeData(item1, item2, result);
+        if (sec.contains("resultItem")) {
+            sec.set("result", sec.get("resultItem")); // rename resultItem to result
+        }
+        TradeData td = new TradeData();
+        td.deserialize(sec);
+
         plugin.cfg.tradeData.tradeList.put(idxName, td);
         skRecipeIndex++;
         return idxName;

@@ -2,6 +2,9 @@ package cat.nyaa.npc.persistence;
 
 import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.configuration.ISerializable;
+import cat.nyaa.nyaacore.configuration.NbtItemStack;
+import cat.nyaa.nyaacore.utils.ItemStackUtils;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
 import static org.bukkit.Material.AIR;
@@ -27,11 +30,35 @@ public class TradeData implements ISerializable {
         this.result = result.clone();
     }
 
-    @Serializable
+    @Override
+    public void deserialize(ConfigurationSection config) {
+        item1 = null;
+        item2 = null;
+        result = null;
+        NbtItemStack it1 = (NbtItemStack)config.get("item1", null);
+        NbtItemStack it2 = (NbtItemStack)config.get("item2", null);
+        NbtItemStack rst = (NbtItemStack)config.get("result", null);
+        item1 = it1 == null ? null : it1.it;
+        item2 = it2 == null ? null : it2.it;
+        result= rst == null ? null : rst.it;
+        if (item1 == null && item2 != null) {
+            item1 = item2;
+            item2 = null;
+        }
+        if (item1 == null || result == null) {
+            throw new RuntimeException("Bad trade data: " + toString());
+        }
+    }
+
+    @Override
+    public void serialize(ConfigurationSection config) {
+        config.set("item1", new NbtItemStack(item1));
+        config.set("item2", new NbtItemStack(item2));
+        config.set("result", new NbtItemStack(result));
+    }
+
     public ItemStack item1;
-    @Serializable
     public ItemStack item2;
-    @Serializable
     public ItemStack result;
 
     /**
@@ -64,5 +91,18 @@ public class TradeData implements ISerializable {
         msg.append(" => ");
         msg.append(result == null ? new ItemStack(AIR) : result.clone());
         return msg;
+    }
+
+    public static String itemDesc(ItemStack it) {
+        if (it == null) return "<null>";
+        return ItemStackUtils.itemToJson(it).replace('§', '&');
+    }
+
+    @Override
+    public String toString() {
+        String item1_str = itemDesc(item1);
+        String item2_str = itemDesc(item2);
+        String item3_str = itemDesc(result);
+        return String.format("TradeData[item1=%s, item2=%s, result=%s]", item1_str, item2_str, item3_str);
     }
 }

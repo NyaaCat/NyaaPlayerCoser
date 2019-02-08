@@ -216,11 +216,22 @@ public class TradingController implements Listener {
                 // player try to fetch the result item
                 MerchantInventory mInv = (MerchantInventory) ev.getClickedInventory();
 
+                // FIXME debug only
+                if (ev.getWhoClicked().isOp()) {
+                    ev.getWhoClicked().sendMessage("supplied item1: " + TradeData.itemDesc(mInv.getItem(0)));
+                    ev.getWhoClicked().sendMessage("supplied item2: " + TradeData.itemDesc(mInv.getItem(1)));
+                }
+
                 try {
                     MerchantRecipe recipe = m.getRecipe(mInv.getSelectedRecipeIndex());
                     if (recipe instanceof NyaaMerchantRecipe) {
                         NyaaMerchantRecipe nyaaRecipe = (NyaaMerchantRecipe) recipe;
                         TradeData d = nyaaRecipe.getTradeData();
+
+                        // FIXME debug only
+                        if (ev.getWhoClicked().isOp()) {
+                            ev.getWhoClicked().sendMessage("selected recipe: " + d.toString());
+                        }
 
                         if (d.allowedTradeCount(mInv.getItem(0), mInv.getItem(1)) <= 0) {
                             ev.setResult(DENY); // mismatch item, deny exchange
