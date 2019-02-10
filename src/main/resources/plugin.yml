@@ -38,3 +38,6 @@ permissions:
   npc.interact:
     description: Permission required to interact with NPCs
     default: true
+  npc.debug:
+    description: Toggle debug flag and more
+    default: false

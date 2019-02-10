@@ -6,6 +6,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class NyaaPlayerCoser extends JavaPlugin {
     public static final String PLUGIN_COMMAND_NAME = "nyaaplayercoser";
     public static NyaaPlayerCoser instance;
+    public static boolean debugEnabled = false;
 
     public I18n i18n;
     public Configuration cfg;

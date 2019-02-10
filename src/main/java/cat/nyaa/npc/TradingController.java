@@ -217,7 +217,7 @@ public class TradingController implements Listener {
                 MerchantInventory mInv = (MerchantInventory) ev.getClickedInventory();
 
                 // FIXME debug only
-                if (ev.getWhoClicked().isOp()) {
+                if (ev.getWhoClicked().isOp() && NyaaPlayerCoser.debugEnabled) {
                     ev.getWhoClicked().sendMessage("supplied item1: " + TradeData.itemDesc(mInv.getItem(0)));
                     ev.getWhoClicked().sendMessage("supplied item2: " + TradeData.itemDesc(mInv.getItem(1)));
                 }
@@ -229,7 +229,7 @@ public class TradingController implements Listener {
                         TradeData d = nyaaRecipe.getTradeData();
 
                         // FIXME debug only
-                        if (ev.getWhoClicked().isOp()) {
+                        if (ev.getWhoClicked().isOp() && NyaaPlayerCoser.debugEnabled) {
                             ev.getWhoClicked().sendMessage("selected recipe: " + d.toString());
                         }
 

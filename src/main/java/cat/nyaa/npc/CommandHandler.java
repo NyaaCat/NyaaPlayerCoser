@@ -402,7 +402,6 @@ public class CommandHandler extends CommandReceiver {
             }
         } else if ("trade".equalsIgnoreCase(subcommand)) {
             String id = args.nextString();
-            boolean verbose = "verbose".equalsIgnoreCase(args.top());
             TradeData tradeData = plugin.cfg.tradeData.tradeList.get(id);
             if (tradeData == null) {
                 throw new BadCommandException("user.inspect.trade.no_trade", id);
@@ -414,8 +413,7 @@ public class CommandHandler extends CommandReceiver {
                 new Message(I18n.format("user.inspect.trade.item2")).append(tradeData.item2.clone()).send(sender);
             if (tradeData.result != null)
                 new Message(I18n.format("user.inspect.trade.result")).append(tradeData.result.clone()).send(sender);
-            if (verbose)
-                sender.sendMessage(tradeData.toString());
+            sender.sendMessage(tradeData.toString());
 
             if (sender instanceof Player) {
                 Player p = asPlayer(sender);
@@ -510,28 +508,12 @@ public class CommandHandler extends CommandReceiver {
         plugin.entitiesManager.adjustNpcLocation(npcId, sender);
     }
 
-    //@SubCommand(value = "test", permission = "npc.admin")
-    public void testCmd(CommandSender sender, Arguments args) {
-        Player p = asPlayer(sender);
-        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "small.yml"));
-        ItemStack it = cfg.getItemStack("item");
-        p.getLocation().getWorld().dropItem(p.getLocation(), it);
-        p.sendMessage(ItemStackUtils.itemToJson(it));
-        p.sendMessage(ItemStackUtils.itemToBase64(it));
+    @SubCommand(value = "debug", permission = "npc.debug")
+    public void debugCommand(CommandSender sender, Arguments args) {
+        boolean oldStat = NyaaPlayerCoser.debugEnabled;
+        NyaaPlayerCoser.debugEnabled = !oldStat;
 
-        ItemMeta m = it.getItemMeta();
-        m.addAttributeModifier(Attribute.GENERIC_MOVEMENT_SPEED, new AttributeModifier("name", 1, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
-        it.setItemMeta(m);
-        p.sendMessage(ItemStackUtils.itemToJson(it));
-        cfg.set("item", it);
-        p.sendMessage(cfg.saveToString());
-
-
-        // ItemStack sec = cfg.getItemStack("190.recipes.2.resultItem");
-        // p.sendMessage(sec.toString());
-
-        //DummyPlayer d = new DummyPlayer();
-        //plugin.dummyController.sendPlayerInfoList(d, p);
+        sender.sendMessage(String.format("debugEnabled changed from %s to %s", oldStat, NyaaPlayerCoser.debugEnabled));
     }
 
 
