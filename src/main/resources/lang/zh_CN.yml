@@ -1,10 +1,11 @@
 user:
   bad_id: 没有对应 ID 的 NPC。
   spawn:
-    type_disallow: 不允许 %s 的 NPC。
+    type_disallow: 不允许 %s 的 NPC 实体类型。
     not_block: NPC 必须放置在方块上。
     not_enough_space: 空间不足以放置 NPC。
     id_created: '新 NPC ID: %s'
+    npctype_disallow: 不允许 %s 的 NPC 类型。
   info:
     no_selection: 你需要提供 NPC ID 或站在一个 NPC 旁边。
     msg_id: 'NPC ID: %s'
@@ -37,6 +38,81 @@ user:
   interact:
     open_merchant_fail: 打开商店视图失败。请反馈 bug。
     type_not_support: 不支持此 NPC 类型（%s）。
+    not_ready: 该商人还未准备好交易。
+    heh_not_support: HamsterEcoHelper 插件未找到。你无法与此 NPC 交互。
+  playername_length_error: '玩家名称长度应为 3 至 16 个字符。 '
+  edit:
+    help_msg: "Usage: /npc edit <npcId> [key:value] ...\nSupported keys:\n  name \
+      \      : String.          NPC display name\n  npctype    : Enum NpcType.   \
+      \ NPC type\n  entitytype : Enum EntityType. NPC entity type\n  owner      :\
+      \ UUID.     Owner of the npc\n  hehowner   : UUID.     The HEH shop to be opened\n\
+      \  nbt        : String.   NBT tag\n  skin       : String.   Skin of the NPC\
+      \ if entitytype is PLAYER\n  location   : String.   Only accepts \"me\" for\
+      \ now.\n                         Make NPC's location the same as the player's.\n\
+      \  trade      : String.   Create new trade from slot 1/2/3  : trade:+\n    \
+      \                     Reuse existing trade              : trade:+<existing_trade_name>\n\
+      \                         Remove trade                      : trade:-<trade_name>"
+    invalid_uuid: '无效的 UUID: %s'
+    invalid_location: 无效的位置：当前仅支持使用 'me'
+    trade_id_created: '新交易 ID: %s'
+    trade_id_notfound: 交易 ID (%s) 未找到
+    trade_op_invalid: 无效的交易操作
+    skin_entity_not_player: 注意：实体类型不是 PLAYER 时，皮肤功能将不产生效果
+    skin_notfound: 皮肤 "%s" 未找到。使用 "/npc skin add" 以添加皮肤。
+    updated: NPC 已更新
+    not_updated: NPC 未改变
+  inspect:
+    invalid_command: 无效的检查器类型：%s
+    trade:
+      no_trade: 交易 `%s` 未找到。
+      item1: '需要物品1： '
+      item2: '需要物品2： '
+      result: '产品： '
+      item_given: 已生成对应物品做进一步调查
+    npc:
+      msg_id: 'NPC ID: %s'
+      msg_name: NPC 名称：%s
+      msg_entitytype: NPC 实体类型： %s
+      msg_npctype: NPC 类型： %s
+      msg_loc: NPC 位置： %s
+      msg_chest_loc: 已连接箱子位置： %s
+      msg_nbt: NPC NBT 数据： %s
+      msg_owner: '所有者: %s(%s)'
+      msg_hehowner: HEH 所有者：%s(%s)
+      msg_trade_head: NPC 交易：
+      msg_trade_notfound: '  %s：未找到'
+      msg_no_trade: NPC 没有交易
+      eph_notfound: 未在实体管理器中找到记录。也许是 bug？
+      eph_entity: 已生成实体： %s
+      eph_merchant_header: 有效的商人：
+      eph_merchant_item: '  %s : %s(%s)'
+    nearby:
+      cursor: 指针下的 NPC：%s
+      no_cursor: 指针下未找到 NPC。
+      found: 附近的 NPC：%s
+      not_found: 未在范围内找到更多 NPC。
+  skin:
+    exists: SkinId %s 已存在
+    notfound: SkinId %s 未找到
+    list_no_desc: 无描述
+    list: '- {{id}}: {{desc}}: displayMask: {{mask}}, associated player: {{uuid}}'
+    pin_fail: 置顶玩家皮肤失败。
+    pin_success: 已置顶玩家皮肤。
+  hehshop:
+    remove_need_cursor: 你必须看向你的 NPC。
+    remove_unprivileged: 你没有权限移除此 NPC。
+    remove_success: NPC 已移除。
+    add_too_close: 你的 NPC 与其他 NPC 过近。
+    add_success: NPC 已创建。
+    add_too_many: 你创建了太多的 NPC。当前 %d，上限 %s。
+  adjust:
+    not_spawned: 该 NPC 未生成。无法调整。
+    despawned: 该 NPC 已被回收，操作取消。
+    sampling: 取样 NPC 位置 [x:%.2f, y:$.2f, z:$.2f]
+    sampling_fail: 取样 NPC 位置 [x:%.2f, y:$.2f, z:$.2f]。位置不匹配，请重试。
+    sampling_ok: 取样 NPC 位置 [x:%.2f, y:$.2f, z:$.2f]。位置匹配。
+    success: NPC 位置已更新。新位置 [x:%.2f, y:$.2f, z:$.2f]
+    fail: NPC 改变位置过于频繁，无法确定稳定位置。
 manual:
   help:
     description: 显示帮助信息
@@ -46,7 +122,7 @@ manual:
     usage: /npc reload
   spawn:
     description: 定义新 NPC，将生成在准星位置
-    usage: /npc spawn <NpcType> <NpcName> [EntitydataTag]
+    usage: /npc spawn <实体类型> <NPC 类型> <NPC 名称> [EntitydataTag]
   info:
     description: 展示相应 ID 或准星位置处的 NPC 信息
     usage: /npc info [npcId]
@@ -65,3 +141,33 @@ manual:
   newtrade:
     description: 将需要兑换的物品按顺序分别放在生存物品栏的 1, 2, 3 号位置并添加该交易
     usage: /npc newtrade <npcId>
+  import:
+    description: 导入 Shopkeepers save.yml
+    usage: /npc import
+  edit:
+    description: 编辑当前 NPC
+    usage: /npc edit help
+  inspect:
+    description: 检查 NPC 或交易。
+    usage: /npc inspect <trade|npc|nearby> [id|range]
+  skin:
+    description: 修改已保存的 NPC 皮肤
+    usage: /npc skin <subcommand> help
+    add:
+      description: 添加 texture value 和 signature 为新皮肤
+      usage: /npc skin add <newId> <texture_value> <signature> [description]
+    setdefault:
+      description: 设置特定皮肤为默认皮肤
+      usage: /npc skin setdefault <skinId>
+    list:
+      description: 列出所有皮肤。
+      usage: /npc skin list
+    pin:
+      description: 置顶玩家当前皮肤
+      usage: /npc skin pin <playerName> [follow:bool] [skinId]
+  hehshop:
+    description: 创建用于打开 HEH 商店的 NPC
+    usage: /npc hehshop [remove]
+  adjust_location:
+    description: 自动修正 NPC 位置。
+    usage: /npc adjust_location <npcId>
