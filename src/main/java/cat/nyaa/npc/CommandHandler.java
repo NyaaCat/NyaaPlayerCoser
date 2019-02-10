@@ -598,6 +598,13 @@ public class CommandHandler extends CommandReceiver {
             }
         } else {
             Player p = asPlayer(sender);
+
+            int currNpcCount = plugin.cfg.npcData.getNpcByOwnerId(p.getUniqueId()).size();
+            if (currNpcCount >= plugin.cfg.playerNpcLimit) {
+                msg(sender, "user.hehshop.add_too_many", currNpcCount, plugin.cfg.playerNpcLimit);
+                return;
+            }
+
             Block b = getRayTraceBlock(sender);
             if (b == null || b.getType() == Material.AIR) {
                 throw new BadCommandException("user.spawn.not_block");

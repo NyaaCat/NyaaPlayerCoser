@@ -6,6 +6,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class NpcDataConfig extends FileConfigure {
     @Override
@@ -73,6 +74,17 @@ public class NpcDataConfig extends FileConfigure {
         Map<String, NpcData> ret = new HashMap<>();
         for (Map.Entry<String, NpcData> e : npcList.entrySet()) {
             if (e.getValue().chunkX() == chunkX && e.getValue().chunkZ() == chunkZ && e.getValue().worldName.equalsIgnoreCase(world)) {
+                ret.put(e.getKey(), e.getValue());
+            }
+        }
+        return ret;
+    }
+
+    public Map<String, NpcData> getNpcByOwnerId(UUID ownerId) {
+        if (ownerId == null) throw new IllegalArgumentException();
+        Map<String, NpcData> ret = new HashMap<>();
+        for (Map.Entry<String, NpcData> e : npcList.entrySet()) {
+            if (ownerId.equals(e.getValue().ownerId)) {
                 ret.put(e.getKey(), e.getValue());
             }
         }

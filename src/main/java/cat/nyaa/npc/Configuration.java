@@ -40,6 +40,8 @@ public class Configuration extends PluginConfigure {
     public List<String> allowedEntityType = new ArrayList<>();
     @Serializable
     public int tabListDelay = 15;
+    @Serializable
+    public int playerNpcLimit = 6;
     @StandaloneConfig
     public NpcDataConfig npcData;
     @StandaloneConfig

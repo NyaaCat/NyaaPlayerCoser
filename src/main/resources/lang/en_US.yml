@@ -81,6 +81,7 @@ user:
     remove_success: "NPC removed."
     add_too_close: "Your NPC is too close to another NPC."
     add_success: "NPC created."
+    add_too_many: "You've created too many NPCs. Current %d, limit %d."
 
 
 
