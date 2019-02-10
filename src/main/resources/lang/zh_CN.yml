@@ -9,13 +9,14 @@ user:
     no_selection: 你需要提供 NPC ID 或站在一个 NPC 旁边。
     msg_id: 'NPC ID: %s'
     msg_name: 'NPC 名称: %s'
-    msg_type: 'NPC 类型: %s'
+    msg_type: 'NPC 实体类型: %s'
     msg_loc: 'NPC 位置: %s'
     msg_trade: 'NPC 交易: %s'
     msg_no_trade: NPC 没有交易
+    msg_npctype: 'NPC 类型: %s'
   list:
     no_npc: NPC 不存在。
-    msg: '%s [id=%s, type=%s]'
+    msg: '%s [id=%s, type=%s, npctype=%s]'
   newtrade:
     id_created: '新交易 ID: %s'
   chest:
@@ -30,6 +31,12 @@ user:
     npc_changed: 该 NPC 定义已更改。连接取消。
     invalid_chest_block: 该方块不是有效的箱子。
     msg_linked: 箱子已连接。
+    require_trader_type: 此 NPC 不是交易类型，因此无法连接到箱子。
+    timeout: 连接因超时取消。
+  empty_slot: 槽位 %s 为空。
+  interact:
+    open_merchant_fail: 打开商店视图失败。请反馈 bug。
+    type_not_support: 不支持此 NPC 类型（%s）。
 manual:
   help:
     description: 显示帮助信息
