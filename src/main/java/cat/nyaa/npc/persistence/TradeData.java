@@ -67,7 +67,7 @@ public class TradeData implements ISerializable {
      *
      * @param slot1 content of left trade slot
      * @param slot2 content or right trade slot
-     * @return -1 item type mismatch; 0 not enough materials; x>0 this trade can be done at most x times.
+     * @return -1 item type mismatch; 0 not enough materials; x&gt;0 this trade can be done at most x times.
      */
     public int allowedTradeCount(ItemStack slot1, ItemStack slot2) {
         if (slot1 == null || slot1.getType() == AIR) return -1;

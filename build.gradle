@@ -29,23 +29,8 @@ repositories {
     }
 
     maven {
-        name 'vault-repo'
-        url 'http://nexus.hc.to/content/repositories/pub_releases'
-    }
-
-    maven {
-        name 'nu-langchecker'
-        url 'https://raw.githubusercontent.com/Librazy/NyaaUtilsLangChecker/maven-repo'
-    }
-
-    maven {
         name 'ess-repo'
         url 'http://repo.ess3.net/content/groups/essentials'
-    }
-
-    maven {
-        name 'langutils-repo'
-        url 'https://raw.github.com/MascusJeoraly/LanguageUtils/mvn-repo/'
     }
 
     maven {
@@ -55,6 +40,11 @@ repositories {
 
     maven {
         url "http://repo.dmulloy2.net/nexus/repository/public/"
+    }
+
+    maven {
+        name 'vault-repo'
+        url 'http://nexus.hc.to/content/repositories/pub_releases'
     }
 }
 
@@ -71,6 +61,7 @@ dependencies {
     } else {
         compileOnly('cat.nyaa:nyaacore:6.3-SNAPSHOT') { transitive = false }
         compileOnly('cat.nyaa:nyaautils:6.1-SNAPSHOT') { transitive = false }
+        compileOnly('cat.nyaa:hamsterecohelper:6.2-SNAPSHOT') { transitive = false }
     }
     compileOnly group: "com.comphenix.protocol", name: "ProtocolLib", version: "4.4.0"
 
@@ -87,5 +78,33 @@ tasks.withType(JavaCompile) {
     options.compilerArgs += ["-Xplugin:NyaaUtilsLangAnnotationProcessor", "-Xlint:deprecation"]
     if (nyaaCoreLangDir != null) {
         options.compilerArgs += ["-ALANG_DIR_ADDITIONAL_PATH=" + nyaaCoreLangDir]
+    }
+}
+
+javadoc {
+    (options as StandardJavadocDocletOptions).with {
+        links 'https://docs.oracle.com/javase/8/docs/api/'
+        links 'https://hub.spigotmc.org/javadocs/spigot/'
+        links 'https://google.github.io/guava/releases/21.0/api/docs/'
+        links 'https://nyaacat.github.io/NyaaCentral/NyaaCore/6.3-mc1.13.2/javadoc/'
+        links 'https://nyaacat.github.io/NyaaCentral/HamsterEcoHelper/6.2-mc1.13.2/javadoc/'
+
+        locale 'en_US'
+        encoding 'UTF-8'
+        docEncoding 'UTF-8'
+        addBooleanOption('keywords', true)
+
+        def currentJavaVersion = JavaVersion.current()
+        if (currentJavaVersion > JavaVersion.VERSION_1_9) {
+            options.addBooleanOption('html5', true)
+        }
+
+        windowTitle = "HamsterEcoHelper Javadoc"
+        String fullVersion = System.getenv("FULL_VERSION_STRING")
+        if (fullVersion != null) {
+            docTitle = "<b>HamsterEcoHelper</b> " + fullVersion
+        } else {
+            docTitle = "<b>HamsterEcoHelper</b>"
+        }
     }
 }
