@@ -7,8 +7,8 @@ import com.mojang.authlib.properties.Property;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_13_R2.CraftOfflinePlayer;
-import org.bukkit.craftbukkit.v1_13_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_14_R1.CraftOfflinePlayer;
+import org.bukkit.craftbukkit.v1_14_R1.entity.CraftPlayer;
 
 import java.util.ArrayList;
 import java.util.Comparator;

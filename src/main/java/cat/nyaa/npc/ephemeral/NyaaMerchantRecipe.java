@@ -1,7 +1,7 @@
 package cat.nyaa.npc.ephemeral;
 
 import cat.nyaa.npc.persistence.TradeData;
-import org.bukkit.craftbukkit.v1_13_R2.inventory.CraftMerchantRecipe;
+import org.bukkit.craftbukkit.v1_14_R1.inventory.CraftMerchantRecipe;
 import org.bukkit.inventory.ItemStack;
 
 import static org.bukkit.Material.AIR;
@@ -11,7 +11,8 @@ public class NyaaMerchantRecipe extends CraftMerchantRecipe {
     private final TradeData data;
 
     public NyaaMerchantRecipe(String id, TradeData data) {
-        super(data.result, 0, 99999, false);
+        // public CraftMerchantRecipe(ItemStack result, int uses, int maxUses, boolean experienceReward, int experience, float priceMultiplier)
+        super(data.result, 0, 99999, false, 0, 1);
         if (data.result == null || data.result.getType() == AIR) throw new IllegalArgumentException();
         this.id = id;
         this.data = data;

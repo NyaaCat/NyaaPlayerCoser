@@ -1,83 +1,117 @@
-plugins {
-    id 'java-library'
-}
-// Version strings used for CI
-// Note the spaces before and after the equals sign
-ext.majorVersion = 0
-ext.minorVersion = 1
-ext.minecraftVersion = "1.13.2"
+apply plugin: "java-library"
+apply plugin: "maven-publish"
 
+ext.majorVersion = 6
+ext.minorVersion = 4
+ext.minecraftVersion = "1.14.1"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+// Suppiled by Jenkins
+ext.buildNumber = System.env.BUILD_NUMBER == null ? "x"                : "$System.env.BUILD_NUMBER"
+ext.mavenDirectory = System.env.MAVEN_DIR == null ? "$projectDir/repo" : "$System.env.MAVEN_DIR"
+
+// Search for spigot nms jar file
+String spigotNmsPath = "";
+if (new File("${projectDir}/lib/spigot-${minecraftVersion}.jar").exists()) {
+    spigotNmsPath = "${projectDir}/lib/spigot-${minecraftVersion}.jar"
+} else if (new File("${mavenDirectory}/spigot-${minecraftVersion}-latest.jar").exists()) {
+    spigotNmsPath = "${mavenDirectory}/spigot-${minecraftVersion}-latest.jar"
+} else {
+    spigotNmsPath = "${projectDir}/lib/spigot-${minecraftVersion}.jar"
+    def f = new File(spigotNmsPath)
+    println "Downloading spigot-${minecraftVersion}.jar"
+    f.getParentFile().mkdirs();
+    new URL("https://ci.nyaacat.com/maven/spigot-${minecraftVersion}-latest.jar").withInputStream{ i -> f.withOutputStream{ it << i }}
+}
+
+// Version used for distribution. Different from maven repo
+group = "cat.nyaa"
+archivesBaseName = "NyaaPlayerCoser-mc$minecraftVersion"
+version = "$majorVersion.$minorVersion.$buildNumber"
+
+// extra compile warnings
+compileJava {
+    options.compilerArgs += ["-Xlint:deprecation,unchecked,rawtypes"]
+    options.encoding = 'UTF-8'
+}
+
 repositories {
     jcenter()
-
-    maven {
-        name 'Spigot'
-        url 'https://hub.spigotmc.org/nexus/content/groups/public/'
-    }
-
-    maven {
-        name 'Sonatype'
-        url 'https://oss.sonatype.org/content/groups/public'
-    }
-
-    maven {
-        name 'NyaaCore'
-        url 'https://raw.githubusercontent.com/NyaaCat/NyaaCentral/maven-repo'
-    }
-
-    maven {
-        name 'ess-repo'
-        url 'http://repo.ess3.net/content/groups/essentials'
-    }
-
-    maven {
-        name 'sk89q'
-        url 'http://maven.sk89q.com/artifactory/repo/'
-    }
-
-    maven {
-        url "http://repo.dmulloy2.net/nexus/repository/public/"
-    }
-
-    maven {
-        name 'vault-repo'
-        url 'http://nexus.hc.to/content/repositories/pub_releases'
-    }
+    maven { name 'Spigot';      url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+    maven { name 'Sonatype';    url 'https://oss.sonatype.org/content/groups/public' }
+    maven { name 'vault-repo';  url 'http://nexus.hc.to/content/repositories/pub_releases' }
+    maven { name 'ess-repo';    url 'http://repo.ess3.net/content/groups/essentials' }
+    maven { name 'dmulloy-repo';url 'http://repo.dmulloy2.net/nexus/repository/public/' }
+    maven { name 'NyaaCat';     url 'https://ci.nyaacat.com/maven/' }
 }
 
 dependencies {
-    // spigot
-    compileOnly 'org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT'
-    compileOnly files('lib/spigot-1.13.2.jar')    // for NMS
+    // spigot dependencies
+    compileOnly "org.spigotmc:spigot-api:$minecraftVersion-R0.1-SNAPSHOT"
+    compileOnly files(spigotNmsPath)
 
-    // other plugins
+    // Nyaa plugins
     if (gradle.hasProperty("useLocalDependencies") && gradle.useLocalDependencies) {
         compileOnly project(":NyaaCore")
         compileOnly project(":NyaaUtils")
         compileOnly project(":HamsterEcoHelper")
     } else {
-        compileOnly('cat.nyaa:nyaacore:6.3-SNAPSHOT') { transitive = false }
-        compileOnly('cat.nyaa:nyaautils:6.1-SNAPSHOT') { transitive = false }
-        compileOnly('cat.nyaa:hamsterecohelper:6.2-SNAPSHOT') { transitive = false }
+        compileOnly('cat.nyaa:nyaacore:6.4-SNAPSHOT')
+        compileOnly('cat.nyaa:nyaautils:6.4-SNAPSHOT')
+        compileOnly('cat.nyaa:hamsterecohelper:6.4-SNAPSHOT')
     }
-    compileOnly group: "com.comphenix.protocol", name: "ProtocolLib", version: "4.4.0"
 
-    // annotation processor
+    // other plugins
+    compileOnly "com.comphenix.protocol:ProtocolLib-API:4.4.0"
+
+    // Annotation precessor
     compileOnly 'org.librazy:NyaaUtilsLangChecker:2.0-SNAPSHOT'
     annotationProcessor 'org.librazy:NyaaUtilsLangChecker:2.0-SNAPSHOT'
     annotationProcessor "org.spigotmc:spigot-api:$minecraftVersion-R0.1-SNAPSHOT"
+
 }
 
 // extra config for NyaaCore Language string
-tasks.withType(JavaCompile) {
-    String nyaaCoreLangDir = gradle.hasProperty("NyaaCoreLangDirs") ? gradle.NyaaCoreLangDirs : null
-    if (nyaaCoreLangDir == null) { nyaaCoreLangDir = System.getenv("NYAACORE_LANG_DIR") }
-    options.compilerArgs += ["-Xplugin:NyaaUtilsLangAnnotationProcessor", "-Xlint:deprecation"]
-    if (nyaaCoreLangDir != null) {
-        options.compilerArgs += ["-ALANG_DIR_ADDITIONAL_PATH=" + nyaaCoreLangDir]
+// TODO: langcheck temporarily disabled
+// tasks.withType(JavaCompile) {
+//     String nyaaCoreLangDir = gradle.hasProperty("NyaaCoreLangDirs") ? gradle.NyaaCoreLangDirs : null
+//     if (nyaaCoreLangDir == null) { nyaaCoreLangDir = System.getenv("NYAACORE_LANG_DIR") }
+//     options.compilerArgs += ["-Xplugin:NyaaUtilsLangAnnotationProcessor", "-Xlint:deprecation"]
+//     if (nyaaCoreLangDir != null) {
+//         options.compilerArgs += ["-ALANG_DIR_ADDITIONAL_PATH=" + nyaaCoreLangDir]
+//     }
+// }
+
+// publications
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
+}
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier = 'javadoc'
+}
+processResources { // modify version string
+    filesMatching("**/plugin.yml") {
+        expand 'version': project.version
+    }
+}
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact sourcesJar
+            artifact javadocJar
+            groupId "cat.nyaa"
+            artifactId "npc"
+            version "$majorVersion.$minorVersion-SNAPSHOT"
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "${mavenDirectory}"
+        }
     }
 }
 
@@ -99,12 +133,12 @@ javadoc {
             options.addBooleanOption('html5', true)
         }
 
-        windowTitle = "HamsterEcoHelper Javadoc"
+        windowTitle = "NyaaPlayerCoser Javadoc"
         String fullVersion = System.getenv("FULL_VERSION_STRING")
         if (fullVersion != null) {
-            docTitle = "<b>HamsterEcoHelper</b> " + fullVersion
+            docTitle = "<b>NyaaPlayerCoser</b> " + fullVersion
         } else {
-            docTitle = "<b>HamsterEcoHelper</b>"
+            docTitle = "<b>NyaaPlayerCoser</b>"
         }
     }
 }

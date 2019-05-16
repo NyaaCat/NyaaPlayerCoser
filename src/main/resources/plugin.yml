@@ -1,7 +1,7 @@
 name: NyaaPlayerCoser
 main: cat.nyaa.npc.NyaaPlayerCoser
 description: "NPC plugin for NyaaCraft servers"
-version: 0.1
+version: ${version}
 depend: [NyaaCore, ProtocolLib]
 softdepend: [HamsterEcoHelper]
 authors: [RecursiveG]
