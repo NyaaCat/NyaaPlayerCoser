@@ -30,6 +30,8 @@ import org.bukkit.util.Vector;
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
+import java.util.List;
+import java.util.Arrays;
 import java.util.UUID;
 
 import static org.bukkit.entity.EntityType.PLAYER;
@@ -257,8 +259,14 @@ public class CommandHandler extends CommandReceiver {
                     return;
                 }
             } else {
-                msg(sender, "user.edit.trade_op_invalid");
-                return;
+                List<String> newTradeList = Arrays.asList(trade_op.split(","));
+                for (String trade_id : newTradeList) {
+                    if (!plugin.cfg.tradeData.tradeList.containsKey(trade_id)) {
+                        msg(sender, "user.edit.trade_id_notfound", trade_id);
+                        return;
+                    }
+                }
+                data.trades = newTradeList;
             }
             modified = true;
         }
