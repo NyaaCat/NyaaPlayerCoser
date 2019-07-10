@@ -189,8 +189,8 @@ public class NPCPlayer extends NPCBase {
         if (pitch != null) this.pitch = (byte) (pitch / 360.0 * 256);
         if (yaw != null) this.yaw = (byte) (yaw / 360.0 * 256);
         PacketContainer pktEntityLook = ExternalPluginUtils.getPM()
-                .createPacketConstructor(PacketType.Play.Server.REL_ENTITY_MOVE_LOOK, int.class, long.class, long.class, long.class, byte.class, byte.class, boolean.class)
-                .createPacket(entityId, 0L, 0L, 0L, this.yaw, this.pitch, true);
+                .createPacketConstructor(PacketType.Play.Server.REL_ENTITY_MOVE_LOOK, int.class, short.class, short.class, short.class, byte.class, byte.class, boolean.class)
+                .createPacket(entityId, (short)0, (short)0, (short)0, this.yaw, this.pitch, true);
         PacketContainer pktEntityHeadRotation = ExternalPluginUtils.getPM().createPacket(PacketType.Play.Server.ENTITY_HEAD_ROTATION);
         pktEntityHeadRotation.getIntegers().write(0, entityId);
         pktEntityHeadRotation.getBytes().write(0, this.yaw);
