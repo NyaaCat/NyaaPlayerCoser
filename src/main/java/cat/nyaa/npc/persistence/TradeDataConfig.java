@@ -43,4 +43,10 @@ public class TradeDataConfig extends FileConfigure {
         save();
         return Integer.toString(maxId++);
     }
+
+    public void changeTrade(String tradeId, TradeData newTradeData) {
+        if (!tradeList.containsKey(tradeId)) throw new IllegalArgumentException(tradeId + " is not a registered trade id");
+        tradeList.put(tradeId, newTradeData);
+        save();
+    }
 }

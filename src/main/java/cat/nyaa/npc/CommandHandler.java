@@ -258,6 +258,22 @@ public class CommandHandler extends CommandReceiver {
                     msg(sender, "user.edit.trade_id_notfound", trade_id);
                     return;
                 }
+            } else if (trade_op.startsWith("=")) {  // FIXME: need to be a separate command
+                sender.sendMessage("[WARN] This trade editing function is not put in proper subcommand, and will be deprecated soon");
+                String trade_id = trade_op.substring(1);
+                if (!plugin.cfg.tradeData.tradeList.containsKey(trade_id)) {
+                    msg(sender, "user.edit.trade_id_notfound", trade_id);
+                    return;
+                }
+
+                ItemStack itemStack1 = getItemStackInSlot(sender, 0, false);
+                ItemStack itemStack2 = getItemStackInSlot(sender, 1, true);
+                ItemStack result = getItemStackInSlot(sender, 2, false);
+                TradeData td = new TradeData(itemStack1, itemStack2, result);
+
+                plugin.cfg.tradeData.changeTrade(trade_id, td);
+                sender.sendMessage("Trade data changed.");
+                sender.sendMessage("[WARN] You need to manually reload the plugin to update other NPCs that use this trade");
             } else {
                 List<String> newTradeList = Arrays.asList(trade_op.split(","));
                 for (String trade_id : newTradeList) {

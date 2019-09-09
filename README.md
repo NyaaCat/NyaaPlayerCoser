@@ -9,6 +9,10 @@ NyaaPlayerCoser (NPC) plugin.
     /npc edit 0 trade:+
     /npc edit 0 trade:+<existing_trade_id>
     /npc edit 0 trade:-<trade_id>
+    /npc edit 0 trade:=<trade_id> # modify the trade specified by trade_id,
+                                  # this function need a separate subcommand
+                                  # You may need to reload to make this change effect on all NPCs
+    /npc edit 0 trade:<trade_id>,<trade_id>,...
     
     /npc inspect nearby
     /npc inspect nearby 5
