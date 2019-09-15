@@ -2,40 +2,33 @@ package cat.nyaa.npc;
 
 import cat.nyaa.npc.ephemeral.NPCBase;
 import cat.nyaa.npc.ephemeral.NyaaMerchant;
+import cat.nyaa.npc.events.TradeRedefinedEvent;
 import cat.nyaa.npc.persistence.*;
+import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.cmdreceiver.Arguments;
 import cat.nyaa.nyaacore.cmdreceiver.BadCommandException;
 import cat.nyaa.nyaacore.cmdreceiver.CommandReceiver;
 import cat.nyaa.nyaacore.cmdreceiver.SubCommand;
-import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.utils.ClickSelectionUtils;
-import cat.nyaa.nyaacore.utils.ItemStackUtils;
 import cat.nyaa.nyaacore.utils.RayTraceUtils;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.mojang.authlib.properties.Property;
 import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.craftbukkit.v1_14_R1.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
 import java.io.File;
-import java.util.Map;
-import java.util.Set;
-import java.util.List;
-import java.util.Arrays;
-import java.util.UUID;
+import java.util.*;
 
 import static org.bukkit.entity.EntityType.PLAYER;
 
@@ -117,6 +110,7 @@ public class CommandHandler extends CommandReceiver {
         asNpcData(npcId);
         plugin.entitiesManager.removeNpcDefinition(npcId);
     }
+
 
     @SubCommand(value = "edit", permission = "npc.command.edit")
     public void editNpc(CommandSender sender, Arguments args) {
@@ -261,22 +255,6 @@ public class CommandHandler extends CommandReceiver {
                     msg(sender, "user.edit.trade_id_notfound", trade_id);
                     return;
                 }
-            } else if (trade_op.startsWith("=")) {  // FIXME: need to be a separate command
-                sender.sendMessage("[WARN] This trade editing function is not put in proper subcommand, and will be deprecated soon");
-                String trade_id = trade_op.substring(1);
-                if (!plugin.cfg.tradeData.tradeList.containsKey(trade_id)) {
-                    msg(sender, "user.edit.trade_id_notfound", trade_id);
-                    return;
-                }
-
-                ItemStack itemStack1 = getItemStackInSlot(sender, 0, false);
-                ItemStack itemStack2 = getItemStackInSlot(sender, 1, true);
-                ItemStack result = getItemStackInSlot(sender, 2, false);
-                TradeData td = new TradeData(itemStack1, itemStack2, result);
-
-                plugin.cfg.tradeData.changeTrade(trade_id, td);
-                sender.sendMessage("Trade data changed.");
-                sender.sendMessage("[WARN] You need to manually reload the plugin to update other NPCs that use this trade");
             } else {
                 List<String> newTradeList = Arrays.asList(trade_op.split(","));
                 for (String trade_id : newTradeList) {
@@ -296,6 +274,25 @@ public class CommandHandler extends CommandReceiver {
         } else {
             msg(sender, "user.edit.not_updated");
         }
+    }
+
+    @SubCommand(value = "edit_trade", permission = "npc.command.edit")
+    public void editTrade(CommandSender sender, Arguments args) {
+        String tradeId = args.nextString();
+        TradeData oldTrade = plugin.cfg.tradeData.tradeList.get(tradeId);
+        if (oldTrade == null) {
+            msg(sender, "user.edit.trade_id_notfound", tradeId);
+            return;
+        }
+
+        ItemStack itemStack1 = getItemStackInSlot(sender, 0, false);
+        ItemStack itemStack2 = getItemStackInSlot(sender, 1, true);
+        ItemStack result = getItemStackInSlot(sender, 2, false);
+        TradeData newTrade = new TradeData(itemStack1, itemStack2, result);
+        plugin.cfg.tradeData.changeTrade(tradeId, newTrade);
+        ImmutableList<String> affectedNpcs = ImmutableList.copyOf(plugin.cfg.npcData.getNpcByTradeId(tradeId).keySet());
+        Bukkit.getServer().getPluginManager().callEvent(new TradeRedefinedEvent(tradeId, oldTrade, newTrade, affectedNpcs));
+        msg(sender, "user.edit_trade.updated");
     }
 
     private static LivingEntity _selectCursorEntity(Player p) {

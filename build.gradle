@@ -67,11 +67,9 @@ dependencies {
     // Nyaa plugins
     if (gradle.hasProperty("useLocalDependencies") && gradle.useLocalDependencies) {
         compileOnly project(":NyaaCore")
-        //compileOnly project(":NyaaUtils")
         compileOnly project(":HamsterEcoHelper")
     } else {
         compileOnly('cat.nyaa:nyaacore:7.0-SNAPSHOT')
-        //compileOnly('cat.nyaa:nyaautils:7.0-SNAPSHOT')
         compileOnly('cat.nyaa:hamsterecohelper:7.0-SNAPSHOT')
     }
 

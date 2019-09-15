@@ -36,6 +36,8 @@ user:
 
     updated: "NPC updated"
     not_updated: "NPC not changed"
+  edit_trade:
+    updated: "Trade data updated"
   inspect:
     invalid_command: "Invalid type to be inspected: %s"
     trade:
@@ -157,6 +159,9 @@ manual:
   hehshop:
     description: Create a NPC which opens up your HEH shop
     usage: /npc hehshop [remove]
+  edit_trade:
+    description: Edit the specified trade. Using slot 1/2/3 item.
+    usage: /npc edit_trade <tradeId>
 
   chest:
     description: Show/edit the related chest info

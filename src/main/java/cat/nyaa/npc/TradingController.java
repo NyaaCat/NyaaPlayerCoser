@@ -6,6 +6,7 @@ import cat.nyaa.npc.ephemeral.NyaaMerchant;
 import cat.nyaa.npc.ephemeral.NyaaMerchantRecipe;
 import cat.nyaa.npc.events.NpcRedefinedEvent;
 import cat.nyaa.npc.events.NpcUndefinedEvent;
+import cat.nyaa.npc.events.TradeRedefinedEvent;
 import cat.nyaa.npc.persistence.NpcData;
 import cat.nyaa.npc.persistence.TradeData;
 import com.comphenix.protocol.events.ListenerPriority;
@@ -93,6 +94,29 @@ public class TradingController implements Listener {
         }
     }
 
+    /**
+     * Display a villager trading window for the player.
+     * (or other type of windows such as HEH trade window)
+     * <p>
+     * For villager trading windows, the actual underlying "villager"
+     * is {@link NyaaMerchant}. And one NM will be created for each player view.
+     * Then one InventoryView will be created for the (player,NM).
+     *       / NyaaMerchant(instance1) -- InventoryView -- Player1
+     * npcId - NyaaMerchant(instance2) -- InventoryView -- Player2
+     *       \ NyaaMerchant(instance3) -- InventoryView -- Player3
+     * npcId2 - ...
+     *        \ ...
+     * - given npcId find NM: use {@link this#activeMerchants}
+     * - given NM find npcId: use {@link NyaaMerchant#getNpcId()}
+     * - given NM find InventoryView: use {@link NyaaMerchant#lookupView()}
+     * - given InventoryView find NM: use {@link NyaaMerchant#lookupMerchant(Inventory)}
+     * <p>
+     * So basically, {@link this#activeMerchants} holds all references to the NM instances
+     * and {@link NyaaMerchant#merchantLookupMap} holds all references to the InventoryViews
+     *
+     * @param npcId
+     * @param p
+     */
     private void activateNpcForPlayer(String npcId, Player p) {
         NpcData data = plugin.cfg.npcData.npcList.get(npcId);
         if (data == null) {
@@ -188,6 +212,13 @@ public class TradingController implements Listener {
         deactivateNpcViews(ev.getNpcId());
     }
 
+    @EventHandler
+    public void onTradeModified(TradeRedefinedEvent ev) {
+        for (String npcId : ev.getAffectedNpc()) {
+            deactivateNpcViews(npcId);
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLeave(PlayerQuitEvent ev) {
         deactivateNpcViewForPlayer(ev.getPlayer());
@@ -252,6 +283,9 @@ public class TradingController implements Listener {
         }
     }
 
+    /**
+     * onPlayerInteractNPC for FakePlayerNPCs, TODO: try to reuse the logic
+     */
     private final PacketListener onRightClickFakePlayer = new PacketAdapter(NyaaPlayerCoser.instance, ListenerPriority.NORMAL,
             USE_ENTITY) {
         @Override

@@ -90,4 +90,19 @@ public class NpcDataConfig extends FileConfigure {
         }
         return ret;
     }
+
+    /**
+     * Return list of NPCs that has the specified trade.
+     * TODO optimize
+     */
+    public Map<String, NpcData> getNpcByTradeId(String tradeId) {
+        if (tradeId == null) throw new IllegalArgumentException();
+        Map<String, NpcData> ret = new HashMap<>();
+        for (Map.Entry<String, NpcData> e : npcList.entrySet()) {
+            if (e.getValue().trades.contains(tradeId)) {
+                ret.put(e.getKey(), e.getValue());
+            }
+        }
+        return ret;
+    }
 }

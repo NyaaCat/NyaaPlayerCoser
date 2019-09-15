@@ -29,6 +29,10 @@ import java.util.*;
 import static cat.nyaa.npc.ephemeral.NPCBase.*;
 
 /**
+ * In charge of entity events: spawn, despawn, etc
+ * TODO: maybe CommandHandler should be in charge of calling TradingController to refresh player view
+ *       rather than create/replace/removeNpcDefinition
+ *
  * A NPC entity should never be stored in disk files.
  * i.e. Entities should be removed when chunk unloads
  * and respawn on chunk load.
