@@ -1,7 +1,9 @@
 package cat.nyaa.npc;
 
 import cat.nyaa.npc.persistence.SkinData;
-import cat.nyaa.nyaacore.CommandReceiver;
+import cat.nyaa.nyaacore.cmdreceiver.Arguments;
+import cat.nyaa.nyaacore.cmdreceiver.CommandReceiver;
+import cat.nyaa.nyaacore.cmdreceiver.SubCommand;
 import com.google.common.collect.Iterators;
 import com.mojang.authlib.properties.Property;
 import org.bukkit.Bukkit;

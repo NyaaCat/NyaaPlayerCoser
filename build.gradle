@@ -1,9 +1,9 @@
 apply plugin: "java-library"
 apply plugin: "maven-publish"
 
-ext.majorVersion = 6
-ext.minorVersion = 4
-ext.minecraftVersion = "1.14.3"
+ext.majorVersion = 7
+ext.minorVersion = 0
+ext.minecraftVersion = "1.14.4"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
@@ -14,7 +14,7 @@ ext.jdDirectory = System.env.JAVADOCS_DIR == null ? null               : "$Syste
 
 // Search for spigot nms jar file
 String spigotNmsPath = "";
-if (System.env.NMS_JAR != null) { 
+if (System.env.NMS_JAR != null) {
     // use NMS_JAR if it's explicitly specified
     spigotNmsPath = "$System.env.NMS_JAR"
     if (new File(spigotNmsPath).exists()) {
@@ -54,7 +54,7 @@ repositories {
     maven { name 'Spigot';      url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
     maven { name 'Sonatype';    url 'https://oss.sonatype.org/content/groups/public' }
     maven { name 'vault-repo';  url 'http://nexus.hc.to/content/repositories/pub_releases' }
-    maven { name 'ess-repo';    url 'http://repo.ess3.net/content/groups/essentials' }
+    //maven { name 'ess-repo';    url 'http://repo.ess3.net/content/groups/essentials' }
     maven { name 'dmulloy-repo';url 'http://repo.dmulloy2.net/nexus/repository/public/' }
     maven { name 'NyaaCat';     url 'https://ci.nyaacat.com/maven/' }
 }
@@ -67,34 +67,17 @@ dependencies {
     // Nyaa plugins
     if (gradle.hasProperty("useLocalDependencies") && gradle.useLocalDependencies) {
         compileOnly project(":NyaaCore")
-        compileOnly project(":NyaaUtils")
+        //compileOnly project(":NyaaUtils")
         compileOnly project(":HamsterEcoHelper")
     } else {
-        compileOnly('cat.nyaa:nyaacore:6.4-SNAPSHOT')
-        compileOnly('cat.nyaa:nyaautils:6.4-SNAPSHOT')
-        compileOnly('cat.nyaa:hamsterecohelper:6.4-SNAPSHOT')
+        compileOnly('cat.nyaa:nyaacore:7.0-SNAPSHOT')
+        //compileOnly('cat.nyaa:nyaautils:7.0-SNAPSHOT')
+        compileOnly('cat.nyaa:hamsterecohelper:7.0-SNAPSHOT')
     }
 
     // other plugins
     compileOnly "com.comphenix.protocol:ProtocolLib-API:4.4.0"
-
-    // Annotation precessor
-    compileOnly 'org.librazy:NyaaUtilsLangChecker:2.0-SNAPSHOT'
-    annotationProcessor 'org.librazy:NyaaUtilsLangChecker:2.0-SNAPSHOT'
-    annotationProcessor "org.spigotmc:spigot-api:$minecraftVersion-R0.1-SNAPSHOT"
-
 }
-
-// extra config for NyaaCore Language string
-// TODO: langcheck temporarily disabled
-// tasks.withType(JavaCompile) {
-//     String nyaaCoreLangDir = gradle.hasProperty("NyaaCoreLangDirs") ? gradle.NyaaCoreLangDirs : null
-//     if (nyaaCoreLangDir == null) { nyaaCoreLangDir = System.getenv("NYAACORE_LANG_DIR") }
-//     options.compilerArgs += ["-Xplugin:NyaaUtilsLangAnnotationProcessor", "-Xlint:deprecation"]
-//     if (nyaaCoreLangDir != null) {
-//         options.compilerArgs += ["-ALANG_DIR_ADDITIONAL_PATH=" + nyaaCoreLangDir]
-//     }
-// }
 
 // publications
 // write javadocs to an external folder which can be served via nginx
