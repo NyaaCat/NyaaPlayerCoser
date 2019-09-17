@@ -27,6 +27,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
+import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -291,34 +292,41 @@ public class TradingController implements Listener {
         @Override
         public void onPacketReceiving(PacketEvent event) {
             if (event.getPacketType() == USE_ENTITY) {
-                int entityId = event.getPacket().getIntegers().read(0);
+                final int entityId = event.getPacket().getIntegers().read(0);
+                final Player p = event.getPlayer();
+                // begin sync task
+                Bukkit.getScheduler().runTask(getPlugin(), new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!p.isOnline()) return;
+                        NPCPlayer dummyNpc = NPCPlayer.spawnedDummyNPCs.get(entityId);
+                        if (dummyNpc != null) {
+                            event.setCancelled(true);
+                            PacketPlayInUseEntity.EnumEntityUseAction action = event.getPacket().getEnumModifier(PacketPlayInUseEntity.EnumEntityUseAction.class, 1).read(0);
+                            if (action == PacketPlayInUseEntity.EnumEntityUseAction.INTERACT) {
+                                EnumHand hand = event.getPacket().getEnumModifier(EnumHand.class, 3).read(0);
 
-                NPCPlayer dummyNpc = NPCPlayer.spawnedDummyNPCs.get(entityId);
-                if (dummyNpc != null) {
-                    event.setCancelled(true);
-                    PacketPlayInUseEntity.EnumEntityUseAction action = event.getPacket().getEnumModifier(PacketPlayInUseEntity.EnumEntityUseAction.class, 1).read(0);
-                    if (action == PacketPlayInUseEntity.EnumEntityUseAction.INTERACT) {
-                        EnumHand hand = event.getPacket().getEnumModifier(EnumHand.class, 3).read(0);
+                                if (hand == EnumHand.MAIN_HAND) {
+                                    if (!p.hasPermission("npc.interact")) {
+                                        return;
+                                    }
 
-                        if (hand == EnumHand.MAIN_HAND) {
-                            Player p = event.getPlayer();
-                            if (!p.hasPermission("npc.interact")) {
-                                return;
+                                    InventoryType currentInvType = p.getOpenInventory().getType();
+                                    if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
+                                        return; // skip if the player has another inventory opened
+                                    }
+
+                                    if (p.getLocation().getWorld() != dummyNpc.getEyeLocation().getWorld()) return;
+                                    if (p.getLocation().distanceSquared(dummyNpc.getEyeLocation()) > 36)
+                                        return; // skip if too far away from npc
+
+                                    activateNpcForPlayer(dummyNpc.id, p);
+                                }
                             }
-
-                            InventoryType currentInvType = p.getOpenInventory().getType();
-                            if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
-                                return; // skip if the player has another inventory opened
-                            }
-
-                            if (p.getLocation().getWorld() != dummyNpc.getEyeLocation().getWorld()) return;
-                            if (p.getLocation().distanceSquared(dummyNpc.getEyeLocation()) > 36)
-                                return; // skip if too far away from npc
-
-                            activateNpcForPlayer(dummyNpc.id, p);
                         }
                     }
-                }
+                });
+                // end sync task
             }
         }
     };
