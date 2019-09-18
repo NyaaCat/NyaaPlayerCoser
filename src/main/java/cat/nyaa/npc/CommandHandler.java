@@ -18,6 +18,7 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.craftbukkit.v1_14_R1.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -28,6 +29,8 @@ import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
 import java.io.File;
+import java.security.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.bukkit.entity.EntityType.PLAYER;
@@ -47,6 +50,8 @@ public class CommandHandler extends CommandReceiver {
 
     @SubCommand(value = "skin", permission = "npc.command.skin")
     public CommandHandlerSkin commandSkin;
+    @SubCommand(value = "travel", permission = "npc.command.edit")
+    public CommandTravelPlan commandTravel;
 
     @SubCommand(value = "reload", permission = "npc.command.reload")
     public void reloadCommand(CommandSender sender, Arguments args) {
@@ -423,6 +428,36 @@ public class CommandHandler extends CommandReceiver {
                         }
                     }
                 }
+            }
+
+            // traveling data
+            if (data.travelPlan == null ||!data.travelPlan.isTraveller) {
+                msg(sender, "user.inspect.npc.tvl_not_traveler");
+            } else {
+                NpcTravelPlan p = data.travelPlan;
+                msg(sender, "user.inspect.npc.tvl_is_traveler");
+                if (p.isPresent) {
+                    msg(sender, "user.inspect.npc.tvl_present");
+                } else {
+                    msg(sender, "user.inspect.npc.tvl_not_present");
+                }
+
+                SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
+                Date resultdate = new Date(p.nextMovementTime);
+                System.out.println(sdf.format(resultdate));
+
+                msg(sender, "user.inspect.npc.tvl_next_travel_time",
+                        sdf.format(resultdate));
+                if (p.nextMovementTime > System.currentTimeMillis()) {
+                    msg(sender, "user.inspect.npc.tvl_future_time");
+                } else {
+                    msg(sender, "user.inspect.npc.tvl_past_time");
+                }
+
+
+                YamlConfiguration cfg = new YamlConfiguration();
+                p.serialize(cfg);
+                sender.sendMessage(cfg.saveToString());
             }
         } else if ("trade".equalsIgnoreCase(subcommand)) {
             String id = args.nextString();

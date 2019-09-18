@@ -10,8 +10,14 @@ NyaaPlayerCoser (NPC) plugin.
     /npc edit 0 trade:+
     /npc edit 0 trade:+<existing_trade_id>
     /npc edit 0 trade:-<trade_id>
-    /npc edit_trade <trade_id>
     /npc edit 0 trade:<trade_id>,<trade_id>,...
+    
+    
+    /npc edit_trade <trade_id>
+    
+    /npc travel disable <npcId>
+    /npc travel enable <npcId> <pstMinSec> <pstMaxSec> <absMinSec> <absMaxSec> <tradeMin> <tradeMax> <rndXZMax> <rndYPosMax> <rndYNegMax> <rndTryMax>
+    /npc travel force_move <npcId>
     
     /npc inspect nearby
     /npc inspect nearby 5

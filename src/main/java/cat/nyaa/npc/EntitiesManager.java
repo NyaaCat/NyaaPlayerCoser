@@ -249,6 +249,14 @@ public class EntitiesManager implements Listener {
             NPCBase npc = idNpcMapping.get(npcId);
             NpcData data = npc.data;
             if (data == null) continue;
+
+            NpcData modifiedData = data.requestSelfModificationBeforeSpawn();
+            if (modifiedData != null) {
+                replaceNpcDefinition(npcId, modifiedData);
+                continue;
+            }
+            if (!data.shouldSpawn()) continue;
+
             World w = Bukkit.getWorld(data.worldName);
             if (w == null) continue;
             if (!w.isChunkLoaded(data.chunkX(), data.chunkZ())) continue;

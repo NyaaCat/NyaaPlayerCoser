@@ -1,6 +1,7 @@
 package cat.nyaa.npc;
 
 import cat.nyaa.nyaacore.LanguageRepository;
+import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class I18n extends LanguageRepository {
@@ -31,5 +32,9 @@ public class I18n extends LanguageRepository {
 
     public static String substitute(String key, Object... args) {
         return instance.getSubstituted(key, args);
+    }
+
+    public static void send(CommandSender recipient, String key, Object... args) {
+        recipient.sendMessage(format(key, args));
     }
 }

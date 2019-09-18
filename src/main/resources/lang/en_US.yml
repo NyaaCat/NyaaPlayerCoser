@@ -65,6 +65,14 @@ user:
       eph_entity: "Spawned entity: %s"
       eph_merchant_header: "Active merchant(s):"
       eph_merchant_item: "  %s : %s(%s)"
+
+      tvl_not_traveler: "Not a traveling NPC"
+      tvl_is_traveler: "This NPC is traveling"
+      tvl_present: "- NPC presents"
+      tvl_not_present: "- NPC not presents"
+      tvl_next_travel_time: "- NPC will travel again on %s"
+      tvl_future_time: "- Travel time in the future"
+      tvl_past_time: "- Travel time in the past"
     nearby:
       cursor: "NPC under cursor: %s"
       no_cursor: "No NPC found under cursor."
@@ -84,6 +92,9 @@ user:
     add_too_close: "Your NPC is too close to another NPC."
     add_success: "NPC created."
     add_too_many: "You've created too many NPCs. Current %d, limit %d."
+  travel:
+    not_traveler: "This NPC is not a traveler. Nothing changed."
+    nothing_to_trade: "Please prepare merchandise before leaving."
 
 
 
@@ -162,7 +173,18 @@ manual:
   edit_trade:
     description: Edit the specified trade. Using slot 1/2/3 item.
     usage: /npc edit_trade <tradeId>
-
+  travel:
+    description: The traveling merchant feature
+    usage: /npc travel <subcommand>
+    disable:
+      description: Stop traveling
+      usage: /npc travel disable <npcId>
+    enable:
+      description: Modify then start the journey
+      usage: /npc travel enable <npcId> <pstMinSec> <pstMaxSec> <absMinSec> <absMaxSec> <tradeMin> <tradeMax> <rndXZMax> <rndYPosMax> <rndYNegMax> <rndTryMax>
+    force_move:
+      description: Force traveling
+      usage: /npc travel force_move <npcId>
   chest:
     description: Show/edit the related chest info
     usage: /npc chest <npcId> [link|unlink]

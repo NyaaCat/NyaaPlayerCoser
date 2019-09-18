@@ -110,6 +110,10 @@ public class NpcData implements ISerializable, Cloneable {
     @Serializable
     public String playerSkin = "default";
 
+    // Travelling Merchants, treat null as DO_NOT_TRAVEL
+    @Serializable
+    public NpcTravelPlan travelPlan = NpcTravelPlan.DO_NOT_TRAVEL;
+
     public int chunkX() {
         return ((int) Math.floor(x)) >> 4;
     }
@@ -125,10 +129,39 @@ public class NpcData implements ISerializable, Cloneable {
             if (this.trades != null) {
                 cloned.trades = new ArrayList<>();
                 cloned.trades.addAll(this.trades);
+                cloned.travelPlan = this.travelPlan.clone();
             }
             return cloned;
         } catch (CloneNotSupportedException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    /**
+     * Allows the NpcData to change itself every time it's about to spawn
+     * Mainly to support the "Traveling Merchant" feature
+     * Every time a change is requested, it's handled as an NpcRedefine and
+     * will be handled by EntitiesManager.
+     *
+     * @return cloned NpcData if modification is necessary, or null if no changes is required.
+     */
+    public NpcData requestSelfModificationBeforeSpawn() {
+        if (travelPlan == null || !travelPlan.isTraveller) return null;
+        if (travelPlan.isTimeToMove()) {
+            NpcData clone = clone();
+            clone.travelPlan.doMove(clone);
+            return clone;
+        }
+        return null;
+    }
+
+    /**
+     * Can suppress the NPC from spawning.
+     * Used for the "Traveling Merchant" feature
+     */
+    public boolean shouldSpawn() {
+        if (travelPlan == null) return true;
+        if (!travelPlan.isTraveller) return true;
+        return travelPlan.isPresent;
     }
 }
