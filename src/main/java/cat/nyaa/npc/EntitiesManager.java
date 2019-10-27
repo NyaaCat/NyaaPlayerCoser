@@ -74,7 +74,10 @@ public class EntitiesManager implements Listener {
     /* Ephemeral-Persistence */
     /* ********************* */
 
-    public Map<String, NPCBase> idNpcMapping = new HashMap<>(); // npc id to npcbase
+    // npc id to npcbase
+    // Should be the same as config data ideally
+    // Contains all the runtime info for NPCs besides config
+    public Map<String, NPCBase> idNpcMapping = new HashMap<>();
 
     /**
      * When an new NPC is created, first save to config then spawn it.
@@ -116,6 +119,8 @@ public class EntitiesManager implements Listener {
     /* ********************** */
 
     /**
+     * Forcefully sync idNpcMapping with config file,
+     * also used for loading config.
      * Scan all worlds and remove npc entities regardless they are traced or not.
      */
     public void forceRespawnAllNpc() {
@@ -250,12 +255,20 @@ public class EntitiesManager implements Listener {
             NpcData data = npc.data;
             if (data == null) continue;
 
-            NpcData modifiedData = data.requestSelfModificationBeforeSpawn();
-            if (modifiedData != null) {
-                replaceNpcDefinition(npcId, modifiedData);
+            // self modification npc data
+            NpcData.SelfModificationResponse rsp = data.requestSelfModificationBeforeSpawn();
+            if (rsp != null) {
+                if (rsp.newDefinition != null) {
+                    replaceNpcDefinition(npcId, rsp.newDefinition);
+                    continue;
+                } else {
+                    startTravelTimer(npcId, rsp.nextModTime);
+                }
+            }
+            if (!data.shouldSpawn()) {
+                npc.despawn();
                 continue;
             }
-            if (!data.shouldSpawn()) continue;
 
             World w = Bukkit.getWorld(data.worldName);
             if (w == null) continue;
@@ -334,6 +347,58 @@ public class EntitiesManager implements Listener {
                 forceRespawnNpc(npc.id);
                 break;
             }
+        }
+    }
+
+    /* ********************** */
+    /* Traveling NPC specific */
+    /* ********************** */
+    private Map<String, BukkitRunnable> scheduledTravelTimers = new HashMap<>();
+
+    private void startTravelTimer(String npcId, long nextTravelTime) {
+        int delay = (int) Math.ceil((nextTravelTime - System.currentTimeMillis()) / 50.0);
+        if (delay < 20) delay = 20;
+        if (scheduledTravelTimers.containsKey(npcId)) {
+            scheduledTravelTimers.remove(npcId).cancel();
+        }
+        BukkitRunnable r = new BukkitRunnable() {
+            @Override
+            public void run() {
+                doTravelTimer(npcId);
+            }
+        };
+        r.runTaskTimer(plugin, delay, 40L);
+        scheduledTravelTimers.put(npcId, r);
+    }
+
+    private void stopTravelTimer(String npcId) {
+        if (scheduledTravelTimers.containsKey(npcId)) {
+            scheduledTravelTimers.remove(npcId).cancel();
+        }
+    }
+
+    private void doTravelTimer(String npcId) {
+        NPCBase npc = idNpcMapping.get(npcId);
+        if (npc == null) {
+            stopTravelTimer(npcId);
+            return;
+        }
+        Location eyeLoc = npc.getEyeLocation();
+        if (eyeLoc == null) {  // not spawned implies no eye location
+            pendingEntityCreation.add(npcId);
+            stopTravelTimer(npcId);
+        } else {  // make sure no players around
+            World w = eyeLoc.getWorld();
+            if (w == null) {  // wtf?
+                // respawn anyway
+            } else {
+                for (Player p : w.getPlayers()) {
+                    double dst = p.getLocation().distanceSquared(eyeLoc);
+                    if (dst < 2500) return; // too close, not respawn
+                }
+            }
+            pendingEntityCreation.add(npcId);
+            stopTravelTimer(npcId);
         }
     }
 

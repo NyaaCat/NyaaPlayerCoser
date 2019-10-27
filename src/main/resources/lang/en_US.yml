@@ -118,6 +118,7 @@ user:
     type_not_support: "This npc type (%s) is not supported."
     not_ready: "This merchant is not ready for business."
     heh_not_support: "HamsterEcoHelper plugin not found. You cannot interact with this NPC."
+    its_time_to_move: "I'm preparing for my upcoming journey. See you next time, player."
   adjust:
     not_spawned: "This NPC is not spawned. Cannot adjust."
     despawned: "This NPC got despawned. Process halted."

@@ -137,22 +137,40 @@ public class NpcData implements ISerializable, Cloneable {
         }
     }
 
+    // TODO: traveling merchant specific functions, use specific names
+    public static class SelfModificationResponse {
+        // request a modification immediately, or request a check in the future
+        // but not both
+
+        public SelfModificationResponse(NpcData newDefinition) {
+            this.newDefinition = newDefinition;
+        }
+
+        public SelfModificationResponse(long nextModTime) {
+            this.nextModTime = Math.max(nextModTime, System.currentTimeMillis() + 1);
+        }
+
+        public NpcData newDefinition = null;
+        public long nextModTime = -1;
+    }
+
     /**
      * Allows the NpcData to change itself every time it's about to spawn
      * Mainly to support the "Traveling Merchant" feature
      * Every time a change is requested, it's handled as an NpcRedefine and
      * will be handled by EntitiesManager.
      *
-     * @return cloned NpcData if modification is necessary, or null if no changes is required.
+     * @return null if neither mod this time nor future mod
      */
-    public NpcData requestSelfModificationBeforeSpawn() {
+    public SelfModificationResponse requestSelfModificationBeforeSpawn() {
         if (travelPlan == null || !travelPlan.isTraveller) return null;
         if (travelPlan.isTimeToMove()) {
             NpcData clone = clone();
             clone.travelPlan.doMove(clone);
-            return clone;
+            return new SelfModificationResponse(clone);
+        } else {
+            return new SelfModificationResponse(travelPlan.nextMovementTime);
         }
-        return null;
     }
 
     /**

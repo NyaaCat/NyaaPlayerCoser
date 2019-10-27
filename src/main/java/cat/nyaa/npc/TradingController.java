@@ -27,7 +27,6 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
-import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -122,6 +121,16 @@ public class TradingController implements Listener {
         NpcData data = plugin.cfg.npcData.npcList.get(npcId);
         if (data == null) {
             plugin.getLogger().warning(String.format("Cannot activate npc %s for player %s : Cannot find NPC definition", npcId, p.getName()));
+            return;
+        }
+        // debug
+//        {
+//            if (data.travelPlan != null && data.travelPlan.isTraveller) {
+//                p.sendMessage(String.format("time to travel: %.2fs", (data.travelPlan.nextMovementTime-System.currentTimeMillis())/1000.0));
+//            }
+//        }
+        if (data.travelPlan != null && data.travelPlan.isTimeToMove()) {
+            p.sendMessage(I18n.format("user.interact.its_time_to_move"));
             return;
         }
 
