@@ -370,7 +370,7 @@ public class EntitiesManager implements Listener {
      * When a chunk loads, scan for (possible) NPC entities and remove them.
      * Then add NPCs that are in the chunk into creationPendingList.
      */
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onChunkLoad(ChunkLoadEvent ev) {
         if (ev.isNewChunk()) return;
         for (Entity e : ev.getChunk().getEntities()) {
@@ -386,7 +386,7 @@ public class EntitiesManager implements Listener {
     /**
      * When a chunk unloads, remove all NPC entities from both the chunk and tracking map.
      */
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onChunkUnLoad(ChunkUnloadEvent ev) {
         for (Entity e : ev.getChunk().getEntities()) {
             String id = getNyaaNpcId(e);

@@ -192,7 +192,7 @@ public class TradingController implements Listener {
         }
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerCloseWindow(InventoryCloseEvent ev) {
         NyaaMerchant m = NyaaMerchant.removeLookup(ev.getInventory());
         if (m != null) {
