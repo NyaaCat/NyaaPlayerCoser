@@ -1,12 +1,40 @@
 package cat.nyaa.npc;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 public class NyaaPlayerCoser extends JavaPlugin {
     public static final String PLUGIN_COMMAND_NAME = "nyaaplayercoser";
     public static NyaaPlayerCoser instance;
     public static boolean debugEnabled = false;
+
+    public static void debug(Consumer<Logger> logWriter) {
+        if (!debugEnabled) return;
+        Logger l = instance == null ? Bukkit.getLogger() : instance.getLogger();
+        try {
+            logWriter.accept(l);
+        } catch (Throwable ex) {
+            l.severe("[NPC DEBUG] Exception thrown from log writer");
+            ex.printStackTrace();
+        }
+    }
+
+    public static void trace(Consumer<Logger> logWriter) {
+        if (!debugEnabled) return;
+        Logger l = instance == null ? Bukkit.getLogger() : instance.getLogger();
+        try {
+            if (logWriter != null) logWriter.accept(l);
+            l.info("[NPC TRACE]" + ExceptionUtils.getFullStackTrace(new Throwable()));
+        } catch (Throwable ex) {
+            l.severe("[NPC TRACE] Exception thrown from log writer");
+            ex.printStackTrace();
+        }
+    }
 
     public I18n i18n;
     public Configuration cfg;

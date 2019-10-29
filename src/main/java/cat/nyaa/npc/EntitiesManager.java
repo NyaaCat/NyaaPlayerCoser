@@ -453,10 +453,16 @@ public class EntitiesManager implements Listener {
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onChunkUnLoad(ChunkUnloadEvent ev) {
+        NyaaPlayerCoser.debug(log->log.info(String.format("onChunkUnload %s", ev.getChunk())));
         for (Entity e : ev.getChunk().getEntities()) {
             String id = getNyaaNpcId(e);
             if (id != null) {
-                idNpcMapping.get(id).despawn();
+                if (idNpcMapping.containsKey(id)) {
+                    idNpcMapping.get(id).despawn();
+                } else {
+                    NyaaPlayerCoser.trace(log -> log.info(String.format("onChunkUnLoad npcId=%s but not in idNpcMapping", id)));
+                    e.remove();
+                }
             }
         }
     }

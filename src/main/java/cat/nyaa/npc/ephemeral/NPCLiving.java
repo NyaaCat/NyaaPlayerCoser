@@ -1,5 +1,6 @@
 package cat.nyaa.npc.ephemeral;
 
+import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.npc.persistence.NpcData;
 import cat.nyaa.nyaacore.utils.NmsUtils;
 import org.bukkit.Bukkit;
@@ -29,6 +30,7 @@ public class NPCLiving extends NPCBase {
 
     @Override
     public void onEntityRemove(Entity e) {
+        NyaaPlayerCoser.trace(log -> log.info(String.format("NPCLiving::onEntityRemove(%s:%s)%s", e, System.identityHashCode(e), data.displayName)));
         if (spawnedEntity == e) {
             spawnedEntity = null;
         }
@@ -36,6 +38,7 @@ public class NPCLiving extends NPCBase {
 
     @Override
     public void despawn() {
+        NyaaPlayerCoser.trace(log -> log.info(String.format("NPCLiving::despawn() %s:%s %s", spawnedEntity, System.identityHashCode(spawnedEntity), data.displayName)));
         if (spawnedEntity != null) {
             spawnedEntity.remove();
             spawnedEntity = null;
@@ -77,6 +80,7 @@ public class NPCLiving extends NPCBase {
         NmsUtils.setEntityOnGround(e, true);
         e.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).addModifier(new AttributeModifier("immobile_entity", -1, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
         spawnedEntity = e;
+        NyaaPlayerCoser.debug(log -> log.info(String.format("NPCLiving::spawn() %s:%s %s", e, System.identityHashCode(e), data.displayName)));
     }
 
     @Override
