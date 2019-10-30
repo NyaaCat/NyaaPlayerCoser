@@ -63,7 +63,7 @@ public class EntitiesManager implements Listener {
         TICK_LISTENER.cancel();
         pendingEntityCreation.clear();
         for (NPCBase npc : idNpcMapping.values()) {
-            npc.despawn();
+            npc.despawn(null);
         }
         idNpcMapping.clear();
         HandlerList.unregisterAll(this);
@@ -98,7 +98,7 @@ public class EntitiesManager implements Listener {
      * Exception thrown if not exists
      */
     public void replaceNpcDefinition(String npcId, NpcData data) {
-        idNpcMapping.get(npcId).despawn();
+        idNpcMapping.get(npcId).despawn(null);
         NpcData oldData = plugin.cfg.npcData.replaceNpc(npcId, data);
         idNpcMapping.put(npcId, NPCBase.fromNpcData(npcId, data));
         forceRespawnNpc(npcId);
@@ -109,7 +109,7 @@ public class EntitiesManager implements Listener {
      * Remove the NPC config and the npc entity.
      */
     public void removeNpcDefinition(String npcId) {
-        idNpcMapping.remove(npcId).despawn();
+        idNpcMapping.remove(npcId).despawn(null);
         NpcData oldData = plugin.cfg.npcData.removeNpc(npcId);
         Bukkit.getServer().getPluginManager().callEvent(new NpcUndefinedEvent(npcId, oldData));
     }
@@ -126,7 +126,7 @@ public class EntitiesManager implements Listener {
     public void forceRespawnAllNpc() {
         pendingEntityCreation.clear();
         for (NPCBase npc : idNpcMapping.values()) {
-            npc.despawn();
+            npc.despawn(null);
         }
 
         idNpcMapping.clear();
@@ -151,7 +151,7 @@ public class EntitiesManager implements Listener {
      */
     public void forceRespawnNpc(String npcId) {
         if (idNpcMapping.containsKey(npcId)) {
-            idNpcMapping.remove(npcId).despawn();
+            idNpcMapping.remove(npcId).despawn(null);
         }
         idNpcMapping.put(npcId, NPCBase.fromNpcData(npcId, plugin.cfg.npcData.npcList.get(npcId)));
         pendingEntityCreation.add(npcId);
@@ -266,7 +266,7 @@ public class EntitiesManager implements Listener {
                 }
             }
             if (!data.shouldSpawn()) {
-                npc.despawn();
+                npc.despawn(null);
                 continue;
             }
 
@@ -274,7 +274,7 @@ public class EntitiesManager implements Listener {
             if (w == null) continue;
             if (!w.isChunkLoaded(data.chunkX(), data.chunkZ())) continue;
 
-            npc.despawn();
+            npc.despawn(null);
             npc.spawn();
             updated_counter++;
         }
@@ -455,10 +455,11 @@ public class EntitiesManager implements Listener {
     public void onChunkUnLoad(ChunkUnloadEvent ev) {
         NyaaPlayerCoser.debug(log->log.info(String.format("onChunkUnload %s", ev.getChunk())));
         for (Entity e : ev.getChunk().getEntities()) {
+            if (!e.isValid() || e.isDead()) continue;
             String id = getNyaaNpcId(e);
             if (id != null) {
                 if (idNpcMapping.containsKey(id)) {
-                    idNpcMapping.get(id).despawn();
+                    idNpcMapping.get(id).despawn(e);
                 } else {
                     NyaaPlayerCoser.trace(log -> log.info(String.format("onChunkUnLoad npcId=%s but not in idNpcMapping", id)));
                     e.remove();

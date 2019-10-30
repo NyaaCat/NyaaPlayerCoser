@@ -152,9 +152,10 @@ public class NPCPlayer extends NPCBase {
     }
 
     @Override
-    public void despawn() {
+    public boolean despawn(Entity e) {
+        if (e != null) Bukkit.getLogger().warning(String.format("NPCPlayer::despawn() received none null value %s. This should not happen.", e));
         try {
-            if (!spawned) return;
+            if (!spawned) return true;
             if (!inRangePlayers.isEmpty()) {
                 PacketContainer pktRemoveEntity = new PacketContainer(PacketType.Play.Server.ENTITY_DESTROY);
                 pktRemoveEntity.getIntegerArrays().write(0, new int[]{entityId});
@@ -170,6 +171,7 @@ public class NPCPlayer extends NPCBase {
             inRangePlayers.clear();
             spawned = false;
         }
+        return true;
     }
 
     private static int nextEntityId() {

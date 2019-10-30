@@ -75,9 +75,11 @@ public abstract class NPCBase {
 
 
     /**
-     * remove spawned/traced entity, if any
+     * remove spawned/traced entity, only if the given e matches the traced e
+     * if e is null, remove any traced entity
+     * return true if the entity is successfully removed
      */
-    public abstract void despawn();
+    public abstract boolean despawn(Entity e);
 
     /**
      * Spawn the corresponding npc entity.

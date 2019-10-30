@@ -16,6 +16,7 @@ public class NyaaPlayerCoser extends JavaPlugin {
     public static void debug(Consumer<Logger> logWriter) {
         if (!debugEnabled) return;
         Logger l = instance == null ? Bukkit.getLogger() : instance.getLogger();
+        l.info("[NPC DEBUG] THREAD = " + Thread.currentThread().getName());
         try {
             logWriter.accept(l);
         } catch (Throwable ex) {
@@ -27,6 +28,7 @@ public class NyaaPlayerCoser extends JavaPlugin {
     public static void trace(Consumer<Logger> logWriter) {
         if (!debugEnabled) return;
         Logger l = instance == null ? Bukkit.getLogger() : instance.getLogger();
+        l.info("[NPC TRACE] THREAD = " + Thread.currentThread().getName());
         try {
             if (logWriter != null) logWriter.accept(l);
             l.info("[NPC TRACE]" + ExceptionUtils.getFullStackTrace(new Throwable()));

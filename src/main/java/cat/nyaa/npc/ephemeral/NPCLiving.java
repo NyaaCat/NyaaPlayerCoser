@@ -37,12 +37,13 @@ public class NPCLiving extends NPCBase {
     }
 
     @Override
-    public void despawn() {
+    public boolean despawn(Entity e) {
+        if (spawnedEntity == null) return true;
         NyaaPlayerCoser.trace(log -> log.info(String.format("NPCLiving::despawn() %s:%s %s", spawnedEntity, System.identityHashCode(spawnedEntity), data.displayName)));
-        if (spawnedEntity != null) {
-            spawnedEntity.remove();
-            spawnedEntity = null;
-        }
+        if (e != null && e != spawnedEntity) return false;
+        spawnedEntity.remove();
+        spawnedEntity = null;
+        return true;
     }
 
     @Override
