@@ -32,4 +32,5 @@ Custom skin if NPC's entity type is `PLAYER`. Skin info can be obtained from [ht
     /npc edit <npc_id> skin:default
 
 # Version History
+- 7.1.x: for Minecraft 1.15.1, since build 17
 - 7.0.x: for Minecraft 1.14.4, since build 8
