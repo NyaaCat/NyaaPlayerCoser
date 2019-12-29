@@ -111,8 +111,14 @@ public class NPCPlayer extends NPCBase {
                 pktSpawn.getDoubles().write(2, loc.getZ());
                 pktSpawn.getBytes().write(0, yaw); // yaw
                 pktSpawn.getBytes().write(1, pitch); // pitch
-                pktSpawn.getDataWatcherModifier().write(0, dataWatcher);
+//                 pktSpawn.getDataWatcherModifier().write(0, dataWatcher);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktSpawn);
+
+                PacketContainer packetContainer = new PacketContainer(PacketType.Play.Server.ENTITY_METADATA);
+                List<WrappedWatchableObject> watchableObjects = dataWatcher.getWatchableObjects();
+                packetContainer.getIntegers().write(0, entityId);
+                packetContainer.getLists(BukkitConverters.getWatchableObjectConverter()).write(0, watchableObjects);
+                ExternalPluginUtils.getPM().sendServerPacket(p, packetContainer);
 
                 Bukkit.getScheduler().runTaskLater(NyaaPlayerCoser.instance, new Runnable() {
                     @Override
