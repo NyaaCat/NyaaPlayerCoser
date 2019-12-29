@@ -83,7 +83,7 @@ public class NPCPlayer extends NPCBase {
         // https://wiki.vg/Entity_metadata#Entity
         // https://github.com/dmulloy2/ProtocolLib/issues/160#issuecomment-192983554
         //dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(10, WrappedDataWatcher.Registry.get(Integer.class)), 3);
-        dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(15, WrappedDataWatcher.Registry.get(Byte.class)), Byte.valueOf((byte) skin.displayMask));
+        dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(16, WrappedDataWatcher.Registry.get(Byte.class)), Byte.valueOf((byte) skin.displayMask));
 
         World w = Bukkit.getWorld(data.worldName);
         if (w == null) throw new IllegalArgumentException();
