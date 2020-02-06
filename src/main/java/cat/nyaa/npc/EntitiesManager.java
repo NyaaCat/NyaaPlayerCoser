@@ -486,7 +486,7 @@ public class EntitiesManager implements Listener {
     /**
      * NPCs immune to any damages
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onNPCAttacked(EntityDamageEvent ev) {
         if (isNyaaNPC(ev.getEntity())) {
             ev.setCancelled(true);
