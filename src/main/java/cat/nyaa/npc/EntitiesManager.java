@@ -17,6 +17,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.weather.LightningStrikeEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
@@ -569,6 +570,16 @@ public class EntitiesManager implements Listener {
         if (ev.getEntity().getScoreboardTags().contains(NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG)) {
             if (ev.isCancelled()) { // the npc still not spawn
                 ev.getEntity().removeScoreboardTag(NPC_SPAWN_TEMPORARY_SCOREBOARD_TAG);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerJoinWorld(PlayerChangedWorldEvent ev){
+        World fromWorld = ev.getFrom();
+        for (NPCBase npc : idNpcMapping.values()) {
+            if (npc.data.entityType == EntityType.PLAYER && npc.data.worldName.equals(fromWorld.getName())) {
+                npc.onPlayerLeaveRange(ev.getPlayer());
             }
         }
     }
