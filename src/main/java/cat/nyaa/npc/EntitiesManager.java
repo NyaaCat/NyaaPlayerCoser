@@ -394,8 +394,12 @@ public class EntitiesManager implements Listener {
                 // respawn anyway
             } else {
                 for (Player p : w.getPlayers()) {
-                    double dst = p.getLocation().distanceSquared(eyeLoc);
-                    if (dst < 2500) return; // too close, not respawn
+                    double dst = p.getLocation().distance(eyeLoc);
+
+                    boolean isTravel = npc.data.travelPlan != null && npc.data.travelPlan.isTraveller;
+                    int distance = isTravel ? plugin.cfg.travelMerchantDistanceCheck : 50;
+
+                    if (dst < distance) return; // too close, not respawn
                 }
             }
             pendingEntityCreation.add(npcId);

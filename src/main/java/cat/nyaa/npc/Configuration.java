@@ -42,6 +42,15 @@ public class Configuration extends PluginConfigure {
     public int tabListDelay = 15;
     @Serializable
     public int playerNpcLimit = 6;
+    @Serializable(name = "travel_merchant.distance_check")
+    public int travelMerchantDistanceCheck = 50;
+    @Serializable(name = "travel_merchant.broadcast_range")
+    public double broadcastRange = 50;
+    @Serializable(name = "travel_merchant.message_arrival")
+    public String arrivalMessage = "&aTraveling merchant &r{merchant.name}&a has arrived.";
+    @Serializable(name = "travel_merchant.message_depart")
+    public String departMessage = "&aTraveling merchant &r{merchant.name}&a has departed.";
+
     @StandaloneConfig
     public NpcDataConfig npcData;
     @StandaloneConfig

@@ -1,11 +1,12 @@
 package cat.nyaa.npc.persistence;
 
+import cat.nyaa.npc.NyaaPlayerCoser;
+import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.configuration.ISerializable;
 import cat.nyaa.nyaacore.utils.MathUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -119,7 +120,53 @@ public class NpcTravelPlan implements ISerializable, Cloneable {
                 data.y = (double) centralY;
                 data.z = centralZ + 0.5D;
             }
+            broadcastArrival(w, data);
+            Vector locationVector = data.getLocationVector();
+            showArriveEffect(w, locationVector);
+
+        }else {
+            World w = Bukkit.getWorld(data.worldName);
+            broadcastDeparture(w, data);
+            Vector locationVector = data.getLocationVector();
+            showDepartureEffect(w, locationVector);
         }
+    }
+
+    private void showDepartureEffect(World w, Vector locationVector) {
+        Location location = new Location(w, locationVector.getX(), locationVector.getY(), locationVector.getZ());
+        if (w.isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) {
+            w.spawnParticle(Particle.PORTAL, location, 300);
+            w.playSound(location, Sound.ENTITY_VILLAGER_CELEBRATE, 20, 1);
+        }
+    }
+
+    private void showArriveEffect(World w, Vector locationVector) {
+        Location location = new Location(w, locationVector.getX(), locationVector.getY(), locationVector.getZ());
+        if (w.isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) {
+            w.spawnParticle(Particle.CLOUD, location, 300, 0, 0, 0, 0.1);
+            w.playSound(location, Sound.ENTITY_VILLAGER_YES, 20, 1);
+        }
+    }
+
+    private void broadcastDeparture(World w, NpcData data) {
+        double broadcastRange = NyaaPlayerCoser.instance.cfg.broadcastRange;
+        String departureMessage = NyaaPlayerCoser.instance.cfg.departMessage;
+        departureMessage = departureMessage.replaceAll("\\{merchant\\.name}", data.displayName);
+        broadcast(w, departureMessage, data.getLocationVector(), broadcastRange);
+    }
+
+    private void broadcastArrival(World w, NpcData data) {
+        double broadcastRange = NyaaPlayerCoser.instance.cfg.broadcastRange;
+        String arrivalMessage = NyaaPlayerCoser.instance.cfg.arrivalMessage;
+        arrivalMessage = arrivalMessage.replaceAll("\\{merchant\\.name}", data.displayName);
+        broadcast(w, arrivalMessage, data.getLocationVector(), broadcastRange);
+    }
+
+    private void broadcast(World w, String message, Vector location, double broadcastRange) {
+        Message msg = new Message(ChatColor.translateAlternateColorCodes('&', message));
+        w.getPlayers().stream()
+                .filter(player -> player.getLocation().toVector().distance(location) < broadcastRange)
+                .forEach(msg::send);
     }
 
     private Location getRandomizedLegLocation(World w) {
