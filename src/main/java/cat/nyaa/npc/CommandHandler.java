@@ -679,4 +679,17 @@ public class CommandHandler extends CommandReceiver {
             msg(sender, "user.hehshop.add_success");
         }
     }
+
+    @SubCommand(value = "my", permission = "npc.command.hehshop")
+    public void inspectMy(CommandSender sender, Arguments args) {
+        Player player = asPlayer(sender);
+        Collection<Map.Entry<String, NpcData>> npcData = Collections.unmodifiableCollection(plugin.cfg.npcData.npcList.entrySet());
+        npcData.stream()
+                .filter(ent -> ent.getValue().ownerId.equals(player.getUniqueId()))
+                .forEach(ent -> {
+                    sender.sendMessage(_shortNpcDescription(ent.getKey()));
+                    NpcData npc = ent.getValue();
+                    sender.sendMessage(String.format("world:%s, x:%.0f , y:%.0f, z:%.0f", npc.worldName, npc.x, npc.y, npc.z));
+                });
+    }
 }
