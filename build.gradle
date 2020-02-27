@@ -53,6 +53,7 @@ repositories {
     maven { name 'Sonatype';    url 'https://oss.sonatype.org/content/groups/public' }
     maven { name 'NyaaCat';     url 'https://ci.nyaacat.com/maven/' }
     maven { name 'dmulloy-repo';url 'http://repo.dmulloy2.net/nexus/repository/public/' } // ProtocolLib
+    maven { name 'aikar';     url 'https://repo.aikar.co/content/groups/aikar/' }
 }
 
 dependencies {
