@@ -3,7 +3,7 @@ package cat.nyaa.npc.ephemeral;
 import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.npc.persistence.NpcData;
 import cat.nyaa.npc.persistence.TradeData;
-import org.bukkit.craftbukkit.v1_16_R1.inventory.CraftMerchantCustom;
+import org.bukkit.craftbukkit.v1_16_R2.inventory.CraftMerchantCustom;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.MerchantInventory;
