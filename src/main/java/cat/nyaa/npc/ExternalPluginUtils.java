@@ -1,8 +1,7 @@
 package cat.nyaa.npc;
 
-import cat.nyaa.HamsterEcoHelper.HamsterEcoHelper;
-import cat.nyaa.HamsterEcoHelper.database.Sign;
-import cat.nyaa.HamsterEcoHelper.signshop.ShopMode;
+import cat.nyaa.heh.HamsterEcoHelper;
+import cat.nyaa.heh.business.signshop.SignShopSell;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import org.bukkit.Bukkit;
@@ -36,16 +35,8 @@ public class ExternalPluginUtils {
                 throw new OperationNotSupportedException();
         }
 
-        Sign fakeSign = new Sign();
-        fakeSign.owner = shopOwner;
-        fakeSign.shopMode = ShopMode.SELL; // shop SELL to player
-        if (fakeLocation == null) fakeLocation = buyer.getLocation();
-        fakeSign.x = (long) fakeLocation.getBlockX();
-        fakeSign.y = (long) fakeLocation.getBlockY();
-        fakeSign.z = (long) fakeLocation.getBlockZ();
-        fakeSign.world = fakeLocation.getWorld().getName();
-
-        heh.signShopManager.openShopGUI(buyer, fakeSign, 1);
+        SignShopSell fakeSign = new SignShopSell(shopOwner);
+        fakeSign.newGUI().open(buyer);
     }
 
     private static ProtocolManager pm = null;
