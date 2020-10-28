@@ -26,6 +26,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.*;
+import java.util.logging.Level;
 
 import static cat.nyaa.npc.ephemeral.NPCBase.*;
 
@@ -141,7 +142,11 @@ public class EntitiesManager implements Listener {
         }
 
         for (Map.Entry<String, NpcData> e : plugin.cfg.npcData.npcList.entrySet()) {
-            idNpcMapping.put(e.getKey(), NPCBase.fromNpcData(e.getKey(), e.getValue()));
+            try{
+                idNpcMapping.put(e.getKey(), NPCBase.fromNpcData(e.getKey(), e.getValue()));
+            }catch (Exception ex){
+                NyaaPlayerCoser.instance.getLogger().log(Level.WARNING, "invalid npc config, skipping");
+            }
         }
 
         pendingEntityCreation.addAll(idNpcMapping.keySet());
