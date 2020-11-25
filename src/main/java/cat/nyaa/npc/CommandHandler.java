@@ -10,6 +10,7 @@ import cat.nyaa.nyaacore.cmdreceiver.BadCommandException;
 import cat.nyaa.nyaacore.cmdreceiver.CommandReceiver;
 import cat.nyaa.nyaacore.cmdreceiver.SubCommand;
 import cat.nyaa.nyaacore.utils.ClickSelectionUtils;
+import cat.nyaa.nyaacore.utils.HexColorUtils;
 import cat.nyaa.nyaacore.utils.RayTraceUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -79,7 +80,7 @@ public class CommandHandler extends CommandReceiver {
             throw new BadCommandException("user.spawn.npctype_disallow", npctype.name());
         }
 
-        String name = ChatColor.translateAlternateColorCodes('&', args.nextString());
+        String name = HexColorUtils.hexColored(args.nextString())
         String entitydataTag = args.next();
         if (entitydataTag == null) entitydataTag = "";
 
@@ -135,7 +136,7 @@ public class CommandHandler extends CommandReceiver {
                 return;
             }
 
-            data.displayName = ChatColor.translateAlternateColorCodes('&', newName);
+            data.displayName = HexColorUtils.hexColored(newName);
             modified = true;
         }
 

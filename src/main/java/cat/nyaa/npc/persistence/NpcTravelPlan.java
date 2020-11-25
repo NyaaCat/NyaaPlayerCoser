@@ -3,6 +3,7 @@ package cat.nyaa.npc.persistence;
 import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.configuration.ISerializable;
+import cat.nyaa.nyaacore.utils.HexColorUtils;
 import cat.nyaa.nyaacore.utils.MathUtils;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
@@ -163,7 +164,7 @@ public class NpcTravelPlan implements ISerializable, Cloneable {
     }
 
     private void broadcast(World w, String message, Vector location, double broadcastRange) {
-        Message msg = new Message(ChatColor.translateAlternateColorCodes('&', message));
+        Message msg = new Message(HexColorUtils.hexColored(message));
         w.getPlayers().stream()
                 .filter(player -> player.getLocation().toVector().distance(location) < broadcastRange)
                 .forEach(msg::send);
