@@ -13,8 +13,12 @@ import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.events.PacketListener;
-import net.minecraft.server.v1_16_R3.EnumHand;
-import net.minecraft.server.v1_16_R3.PacketPlayInUseEntity;
+//import net.minecraft.world.EnumHand;
+//import net.minecraft.network.protocol.game.PacketPlayInUseEntity;
+import com.comphenix.protocol.wrappers.EnumWrappers;
+import com.comphenix.protocol.wrappers.EnumWrappers.EntityUseAction;
+import com.comphenix.protocol.wrappers.EnumWrappers.Hand;
+import com.comphenix.protocol.wrappers.WrappedEnumEntityUseAction;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -101,11 +105,11 @@ public class TradingController implements Listener {
      * For villager trading windows, the actual underlying "villager"
      * is {@link NyaaMerchant}. And one NM will be created for each player view.
      * Then one InventoryView will be created for the (player,NM).
-     *       / NyaaMerchant(instance1) -- InventoryView -- Player1
+     * / NyaaMerchant(instance1) -- InventoryView -- Player1
      * npcId - NyaaMerchant(instance2) -- InventoryView -- Player2
-     *       \ NyaaMerchant(instance3) -- InventoryView -- Player3
+     * \ NyaaMerchant(instance3) -- InventoryView -- Player3
      * npcId2 - ...
-     *        \ ...
+     * \ ...
      * - given npcId find NM: use {@link this#activeMerchants}
      * - given NM find npcId: use {@link NyaaMerchant#getNpcId()}
      * - given NM find InventoryView: use {@link NyaaMerchant#lookupView()}
@@ -306,33 +310,31 @@ public class TradingController implements Listener {
                 final int entityId = event.getPacket().getIntegers().read(0);
                 final Player p = event.getPlayer();
                 // begin sync task
-                Bukkit.getScheduler().runTask(getPlugin(), new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!p.isOnline()) return;
-                        NPCPlayer dummyNpc = NPCPlayer.spawnedDummyNPCs.get(entityId);
-                        if (dummyNpc != null) {
-                            event.setCancelled(true);
-                            PacketPlayInUseEntity.EnumEntityUseAction action = event.getPacket().getEnumModifier(PacketPlayInUseEntity.EnumEntityUseAction.class, 1).read(0);
-                            if (action == PacketPlayInUseEntity.EnumEntityUseAction.INTERACT) {
-                                EnumHand hand = event.getPacket().getEnumModifier(EnumHand.class, 3).read(0);
+                Bukkit.getScheduler().runTask(getPlugin(), () -> {
+                    if (!p.isOnline()) return;
+                    NPCPlayer dummyNpc = NPCPlayer.spawnedDummyNPCs.get(entityId);
+                    if (dummyNpc != null) {
+                        event.setCancelled(true);
+                        WrappedEnumEntityUseAction useAction = event.getPacket().getEnumEntityUseActions().read(0);
+                        EntityUseAction action = useAction.getAction();
 
-                                if (hand == EnumHand.MAIN_HAND) {
-                                    if (!p.hasPermission("npc.interact")) {
-                                        return;
-                                    }
-
-                                    InventoryType currentInvType = p.getOpenInventory().getType();
-                                    if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
-                                        return; // skip if the player has another inventory opened
-                                    }
-
-                                    if (p.getLocation().getWorld() != dummyNpc.getEyeLocation().getWorld()) return;
-                                    if (p.getLocation().distanceSquared(dummyNpc.getEyeLocation()) > 36)
-                                        return; // skip if too far away from npc
-
-                                    activateNpcForPlayer(dummyNpc.id, p);
+                        if (action == EntityUseAction.INTERACT) {
+                            Hand hand = useAction.getHand();
+                            if (hand == Hand.MAIN_HAND) {
+                                if (!p.hasPermission("npc.interact")) {
+                                    return;
                                 }
+
+                                InventoryType currentInvType = p.getOpenInventory().getType();
+                                if (currentInvType != CRAFTING && currentInvType != CREATIVE) {
+                                    return; // skip if the player has another inventory opened
+                                }
+
+                                if (p.getLocation().getWorld() != dummyNpc.getEyeLocation().getWorld()) return;
+                                if (p.getLocation().distanceSquared(dummyNpc.getEyeLocation()) > 36)
+                                    return; // skip if too far away from npc
+
+                                activateNpcForPlayer(dummyNpc.id, p);
                             }
                         }
                     }

@@ -1,7 +1,7 @@
 package cat.nyaa.npc.ephemeral;
 
 import cat.nyaa.npc.persistence.TradeData;
-import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftMerchantRecipe;
+import org.bukkit.craftbukkit.v1_17_R1.inventory.CraftMerchantRecipe;
 import org.bukkit.inventory.ItemStack;
 
 import static org.bukkit.Material.AIR;

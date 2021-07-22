@@ -7,7 +7,7 @@ import cat.nyaa.npc.persistence.SkinData;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.*;
-import net.minecraft.server.v1_16_R3.EntityEgg;
+import net.minecraft.world.entity.projectile.EntityEgg;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;

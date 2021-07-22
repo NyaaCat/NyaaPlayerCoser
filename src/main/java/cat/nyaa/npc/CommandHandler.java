@@ -20,7 +20,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -80,7 +80,7 @@ public class CommandHandler extends CommandReceiver {
             throw new BadCommandException("user.spawn.npctype_disallow", npctype.name());
         }
 
-        String name = HexColorUtils.hexColored(args.nextString())
+        String name = HexColorUtils.hexColored(args.nextString());
         String entitydataTag = args.next();
         if (entitydataTag == null) entitydataTag = "";
 
