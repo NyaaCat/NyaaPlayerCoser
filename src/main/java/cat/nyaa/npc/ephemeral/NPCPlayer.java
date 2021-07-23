@@ -20,6 +20,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class NPCPlayer extends NPCBase {
     private static final SecureRandom rnd = new SecureRandom();
@@ -95,11 +97,10 @@ public class NPCPlayer extends NPCBase {
         if (spawned && !inRangePlayers.contains(p)) {
             inRangePlayers.add(p);
             try {
-
                 PlayerInfoData playerInfoData = new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.CREATIVE, WrappedChatComponent.fromText(data.displayName));
                 PacketContainer pktList = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
                 pktList.getEnumModifier(EnumWrappers.PlayerInfoAction.class, 0).write(0, EnumWrappers.PlayerInfoAction.ADD_PLAYER);
-                List<PlayerInfoData> l = Collections.singletonList(playerInfoData);
+                List<PlayerInfoData> l = Stream.of(playerInfoData).collect(Collectors.toList());
                 pktList.getPlayerInfoDataLists().write(0, l);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
 
@@ -144,7 +145,7 @@ public class NPCPlayer extends NPCBase {
             inRangePlayers.remove(p);
             try {
                 PacketContainer pktRemoveEntity = new PacketContainer(PacketType.Play.Server.ENTITY_DESTROY);
-                pktRemoveEntity.getIntegerArrays().write(0, new int[]{entityId});
+                pktRemoveEntity.getIntegers().write(0, entityId);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktRemoveEntity);
             } catch (InvocationTargetException ex) {
                 ex.printStackTrace();
@@ -164,7 +165,7 @@ public class NPCPlayer extends NPCBase {
             if (!spawned) return true;
             if (!inRangePlayers.isEmpty()) {
                 PacketContainer pktRemoveEntity = new PacketContainer(PacketType.Play.Server.ENTITY_DESTROY);
-                pktRemoveEntity.getIntegerArrays().write(0, new int[]{entityId});
+                pktRemoveEntity.getIntegers().write(0, entityId);
                 for (Player p : inRangePlayers) {
                     ExternalPluginUtils.getPM().sendServerPacket(p, pktRemoveEntity);
                 }
