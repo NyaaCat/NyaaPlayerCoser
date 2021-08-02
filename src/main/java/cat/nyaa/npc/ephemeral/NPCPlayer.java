@@ -4,6 +4,7 @@ import cat.nyaa.npc.ExternalPluginUtils;
 import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.npc.persistence.NpcData;
 import cat.nyaa.npc.persistence.SkinData;
+import cat.nyaa.nyaacore.utils.VersionUtils;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.*;
@@ -144,8 +145,7 @@ public class NPCPlayer extends NPCBase {
         if (spawned && inRangePlayers.contains(p)) {
             inRangePlayers.remove(p);
             try {
-                PacketContainer pktRemoveEntity = new PacketContainer(PacketType.Play.Server.ENTITY_DESTROY);
-                pktRemoveEntity.getIntegers().write(0, entityId);
+                PacketContainer pktRemoveEntity = getRemoveEntityPacket(entityId);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktRemoveEntity);
             } catch (InvocationTargetException ex) {
                 ex.printStackTrace();
@@ -164,8 +164,9 @@ public class NPCPlayer extends NPCBase {
         try {
             if (!spawned) return true;
             if (!inRangePlayers.isEmpty()) {
-                PacketContainer pktRemoveEntity = new PacketContainer(PacketType.Play.Server.ENTITY_DESTROY);
-                pktRemoveEntity.getIntegers().write(0, entityId);
+
+                PacketContainer pktRemoveEntity = getRemoveEntityPacket(entityId);
+
                 for (Player p : inRangePlayers) {
                     ExternalPluginUtils.getPM().sendServerPacket(p, pktRemoveEntity);
                 }
@@ -214,7 +215,18 @@ public class NPCPlayer extends NPCBase {
             }
         }
     }
-
+    private PacketContainer getRemoveEntityPacket(int EntityId){
+        // version < 1.17 int[],1.17:int,1.17.1:List<int>
+        PacketContainer pktRemoveEntity = new PacketContainer(PacketType.Play.Server.ENTITY_DESTROY);
+        if(!VersionUtils.isVersionGreaterOrEq(Bukkit.getBukkitVersion(),"1.17")){
+            pktRemoveEntity.getIntegerArrays().write(0, new int[]{EntityId}); // <1.17
+        }else if(VersionUtils.isVersionGreaterOrEq(Bukkit.getBukkitVersion(),"1.17.1")){
+            pktRemoveEntity.getIntLists().write(0, Collections.singletonList(EntityId)); //>=1.17.1
+        }else{
+            pktRemoveEntity.getIntegers().write(0, EntityId);//=1.17
+        }
+        return pktRemoveEntity;
+    }
     @Override
     public Location getEyeLocation() {
         if (!spawned || inRangePlayers.isEmpty()) return null;
