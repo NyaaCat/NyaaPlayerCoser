@@ -16,7 +16,7 @@ ext.mavenDirectory = System.env.MAVEN_DIR == null ? "$projectDir/repo" : "$Syste
 ext.jdDirectory = System.env.JAVADOCS_DIR == null ? null               : "$System.env.JAVADOCS_DIR"
 
 // Search for spigot nms jar file
-String spigotNmsPath = "";
+String spigotNmsPath = ""
 if (System.env.NMS_JAR != null) {
     // use NMS_JAR if it's explicitly specified
     spigotNmsPath = "$System.env.NMS_JAR"
@@ -35,7 +35,7 @@ if (System.env.NMS_JAR != null) {
         // nms not found, download from nyaaci
         def f = new File(spigotNmsPath)
         println "Downloading spigot-${minecraftVersion}.jar"
-        f.getParentFile().mkdirs();
+        f.getParentFile().mkdirs()
         new URL("https://ci.nyaacat.com/maven/spigot-${minecraftVersion}-latest.jar").withInputStream{ i -> f.withOutputStream{ it << i }}
     }
 }
@@ -44,7 +44,7 @@ println ("Found NMS jar: ${spigotNmsPath}")
 // Version used for distribution. Different from maven repo
 group = "cat.nyaa"
 archivesBaseName = "${pluginNameUpper}-mc$minecraftVersion"
-version = "$majorVersion.$minorVersion.$buildNumber"
+version = "$majorVersion.$minorVersion.$buildNumber".toString()
 
 // Repositories and dependencies
 repositories {
@@ -92,8 +92,8 @@ javadoc {
     // javadoc output folder
     if (project.jdDirectory != null) destinationDir = file("${jdDirectory}/${pluginNameLower}-${version}")
 
-    options {
-        links 'https://docs.oracle.com/en/java/javase/14/docs/api/'
+    (options as StandardJavadocDocletOptions).with  {
+        links 'https://docs.oracle.com/en/java/javase/16/docs/api/'
         links 'https://hub.spigotmc.org/javadocs/spigot/'
         links 'https://google.github.io/guava/releases/21.0/api/docs/'
         links 'https://ci.md-5.net/job/BungeeCord/ws/chat/target/apidocs/'
@@ -104,9 +104,7 @@ javadoc {
         addBooleanOption('keywords', true)
         addStringOption('Xdoclint:none', '-quiet')
 
-        if (JavaVersion.current() > JavaVersion.VERSION_1_9) {
-            addBooleanOption('html5', true)
-        }
+        options.addBooleanOption('html5', true)
 
         windowTitle = "${pluginNameUpper} Javadoc"
         docTitle = "${pluginNameUpper} (mc$minecraftVersion-${project.version})"
@@ -143,4 +141,5 @@ publishing {
         }
     }
 }
+
 
