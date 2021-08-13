@@ -1,6 +1,7 @@
 package cat.nyaa.npc.persistence;
 
 import cat.nyaa.npc.NyaaPlayerCoser;
+import cat.nyaa.npc.npctype.NpcTypes;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -100,7 +101,7 @@ public class DataImporter {
         npc.entityType = EntityType.fromName(sec.getString("object"));
         if (npc.entityType == null) throw new RuntimeException("Unknown entity type: " + sec.getString("object"));
         npc.enabled = true;
-        npc.npcType = NpcType.TRADER_UNLIMITED;
+        npc.npcType = NpcTypes.TRADER_UNLIMITED.getId();
         npc.trades = new ArrayList<>();
 
         if (sec.contains("recipes")) {

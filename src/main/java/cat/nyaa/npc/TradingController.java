@@ -7,6 +7,8 @@ import cat.nyaa.npc.ephemeral.NyaaMerchantRecipe;
 import cat.nyaa.npc.events.NpcRedefinedEvent;
 import cat.nyaa.npc.events.NpcUndefinedEvent;
 import cat.nyaa.npc.events.TradeRedefinedEvent;
+import cat.nyaa.npc.npctype.AbstractNpcType;
+import cat.nyaa.npc.npctype.NpcTypes;
 import cat.nyaa.npc.persistence.NpcData;
 import cat.nyaa.npc.persistence.TradeData;
 import cat.nyaa.npc.utils.RunCommandUtils;
@@ -33,8 +35,6 @@ import org.bukkit.inventory.*;
 import java.util.*;
 import java.util.logging.Level;
 
-import static cat.nyaa.npc.persistence.NpcType.TRADER_BOX;
-import static cat.nyaa.npc.persistence.NpcType.TRADER_UNLIMITED;
 import static com.comphenix.protocol.PacketType.Play.Client.USE_ENTITY;
 import static org.bukkit.event.Event.Result.DENY;
 import static org.bukkit.event.inventory.InventoryType.CRAFTING;
@@ -136,16 +136,22 @@ public class TradingController implements Listener {
             return;
         }
 
+        AbstractNpcType npcType = NpcTypes.getNpcType(data.npcType);
+        if(npcType!=null) {
+            npcType.activateNpcForPlayer(data, npcId, p);
+        }else {
+            p.sendMessage(I18n.format("user.interact.type_not_support", data.npcType));
+        }
+
+        /*
         switch (data.npcType) {
-            case UNSPECIFIED: {
+            case UNSPECIFIED -> {
                 p.sendMessage(I18n.format("user.interact.not_ready"));
-                break;
             }
-            case TRADER_BOX: {
+            case TRADER_BOX -> {
                 p.sendMessage(I18n.format("user.interact.type_not_support", TRADER_BOX)); // TODO
-                break;
             }
-            case TRADER_UNLIMITED: {
+            case TRADER_UNLIMITED -> {
                 if (data.trades.size() <= 0) {
                     p.sendMessage(I18n.format("user.interact.not_ready"));
                 } else {
@@ -161,28 +167,24 @@ public class TradingController implements Listener {
                         activeMerchants.get(npcId).add(ephemeralMerchant);
                     }
                 }
-                break;
             }
-            case HEH_SELL_SHOP: {
+            case HEH_SELL_SHOP -> {
                 try {
                     ExternalPluginUtils.hehOpenPlayerShop(data.ownerId, p, p.getLocation(), "npc-" + npcId);
                 } catch (ExternalPluginUtils.OperationNotSupportedException ex) {
                     p.sendMessage(I18n.format("user.interact.heh_not_support"));
                 }
-                break;
             }
-            case COMMAND: {
+            case COMMAND -> {
                 if (data.npcCommand == null || data.npcCommand.equals("")) {
                     p.sendMessage(I18n.format("user.interact.not_ready"));
                     break;
                 }
                 RunCommandUtils.executeCommand(p, data.npcCommand, data.commandPermission);
-                break;
             }
-            default: {
-                p.sendMessage(I18n.format("user.interact.type_not_support", data.npcType));
-            }
+            default -> p.sendMessage(I18n.format("user.interact.type_not_support", data.npcType));
         }
+        */
     }
 
     private void deactivateNpcViews(String npcId) {
@@ -261,48 +263,8 @@ public class TradingController implements Listener {
             ev.setResult(DENY);
             return;
         }
-
-        if (data.npcType == TRADER_UNLIMITED) {
-            if (ev.getClickedInventory() instanceof MerchantInventory && ev.getSlotType() == InventoryType.SlotType.RESULT) {
-                // player try to fetch the result item
-                MerchantInventory mInv = (MerchantInventory) ev.getClickedInventory();
-
-                // FIXME debug only
-                NyaaPlayerCoser.debug(log -> {
-                    if (ev.getWhoClicked().isOp()) {
-                        ev.getWhoClicked().sendMessage("supplied item1: " + TradeData.itemDesc(mInv.getItem(0)));
-                        ev.getWhoClicked().sendMessage("supplied item2: " + TradeData.itemDesc(mInv.getItem(1)));
-                    }
-                });
-
-                try {
-                    MerchantRecipe recipe = m.getRecipe(mInv.getSelectedRecipeIndex());
-                    if (recipe instanceof NyaaMerchantRecipe) {
-                        NyaaMerchantRecipe nyaaRecipe = (NyaaMerchantRecipe) recipe;
-                        TradeData d = nyaaRecipe.getTradeData();
-
-                        // FIXME debug only
-                        if (ev.getWhoClicked().isOp() && NyaaPlayerCoser.debugEnabled) {
-                            ev.getWhoClicked().sendMessage("selected recipe: " + d.toString());
-                        }
-
-                        if (d.allowedTradeCount(mInv.getItem(0), mInv.getItem(1)) <= 0) {
-                            ev.setResult(DENY); // mismatch item, deny exchange
-                        }
-                    } else {
-                        ev.setResult(DENY);
-                        plugin.getLogger().warning(String.format("NyaaNPC (%s) with non-NPC recipe: %s", m.getNpcId(), recipe));
-                    }
-                } catch (NullPointerException ex) {
-                    plugin.getLogger().log(Level.WARNING, "Error trade with npc: " + m.getNpcId(), ex);
-                    ev.getWhoClicked().sendMessage("Internal Error: please report this bug");
-                    ev.setResult(DENY);
-                }
-            }
-        } else {
-            return;
-            // TODO: chest inventory
-        }
+        AbstractNpcType npcType = NpcTypes.getNpcType(data.npcType);
+        if(npcType!=null)npcType.playerInteractWithWindow(ev,data,m);
     }
 
     /**

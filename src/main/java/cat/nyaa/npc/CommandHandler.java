@@ -3,6 +3,8 @@ package cat.nyaa.npc;
 import cat.nyaa.npc.ephemeral.NPCBase;
 import cat.nyaa.npc.ephemeral.NyaaMerchant;
 import cat.nyaa.npc.events.TradeRedefinedEvent;
+import cat.nyaa.npc.npctype.AbstractNpcType;
+import cat.nyaa.npc.npctype.NpcTypes;
 import cat.nyaa.npc.persistence.*;
 import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.cmdreceiver.Arguments;
@@ -15,6 +17,7 @@ import cat.nyaa.nyaacore.utils.RayTraceUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.mojang.authlib.properties.Property;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -75,10 +78,11 @@ public class CommandHandler extends CommandReceiver {
         if (!plugin.cfg.isAllowedType(entityType)) {
             throw new BadCommandException("user.spawn.type_disallow", entityType.name());
         }
-        NpcType npctype = args.nextEnum(NpcType.class);
-        if (npctype != NpcType.TRADER_UNLIMITED && npctype != NpcType.HEH_SELL_SHOP && npctype != NpcType.COMMAND) {
-            throw new BadCommandException("user.spawn.npctype_disallow", npctype.name());
-        }
+        //NpcType npctype = args.nextEnum(NpcType.class);
+        String npctypeStr = args.nextString();
+        AbstractNpcType npctype = NpcTypes.getNpcType(npctypeStr);
+        if(npctype == null || !npctype.canSpawn(entityType,sender))
+            throw new BadCommandException("user.spawn.npctype_disallow", npctypeStr);
 
         String name = HexColorUtils.hexColored(args.nextString());
         String entitydataTag = args.next();
@@ -104,7 +108,7 @@ public class CommandHandler extends CommandReceiver {
         NpcData data = new NpcData(
                 asPlayer(sender).getUniqueId(),
                 loc,
-                name, entityType, npctype, entitydataTag);
+                name, entityType, npctypeStr, entitydataTag);
         data.hehShopOwnerUUID = data.ownerId;
         String npcId = plugin.entitiesManager.createNpcDefinition(data);
         msg(sender, "user.spawn.id_created", npcId);
@@ -142,15 +146,15 @@ public class CommandHandler extends CommandReceiver {
 
         String newNpcType = args.argString("npctype", null);
         if (newNpcType != null) {
-            NpcType newType = Arguments.parseEnum(NpcType.class, newNpcType);
-            if (newType != NpcType.HEH_SELL_SHOP && newType != NpcType.TRADER_UNLIMITED && newType!=NpcType.COMMAND) {
-                msg(sender, "user.spawn.npctype_disallow", newType.name());
+            if(!NpcTypes.hasNpcType(newNpcType)){
+                msg(sender, "user.spawn.npctype_disallow", newNpcType);
+            }
+            AbstractNpcType newType = NpcTypes.getNpcType(newNpcType);
+            if(newType == null || !newType.canBeSet(data)){
+                msg(sender, "user.spawn.npctype_disallow", Objects.requireNonNullElse(newType.getId(),newNpcType));
                 return;
             } else {
-                if (newType == NpcType.HEH_SELL_SHOP && data.hehShopOwnerUUID == null) {
-                    data.hehShopOwnerUUID = data.ownerId;
-                }
-                data.npcType = newType;
+                data.npcType = newType.getId();
                 modified = true;
             }
         }
@@ -399,8 +403,8 @@ public class CommandHandler extends CommandReceiver {
             msg(sender, "user.inspect.npc.msg_npctype", data.npcType);
             msg(sender, "user.inspect.npc.msg_loc",
                     String.format("[world=%s, x=%.2f, y=%.2f, z=%.2f]", data.worldName, data.x, data.y, data.z));
-            msg(sender, "user.inspect.npc.msg_chest_loc",
-                    String.format("[world=%s, x=%d, y=%d, z=%d]", data.chestWorldName, data.chestX, data.chestY, data.chestZ));
+//            msg(sender, "user.inspect.npc.msg_chest_loc",
+//                    String.format("[world=%s, x=%d, y=%d, z=%d]", data.chestWorldName, data.chestX, data.chestY, data.chestZ));
             msg(sender, "user.inspect.npc.msg_nbt", data.nbtTag);
 
             String ownerName = data.ownerId == null ? null : Bukkit.getOfflinePlayer(data.ownerId).getName();
@@ -514,72 +518,6 @@ public class CommandHandler extends CommandReceiver {
     }
 
 
-    //@SubCommand(value = "chest", permission = "npc.admin.edit")
-    public void editChestInfo(CommandSender sender, Arguments args) {
-        String npcId = args.nextString();
-        NpcData npc = asNpcData(npcId);
-        if (npc.npcType != NpcType.TRADER_UNLIMITED && npc.npcType != NpcType.TRADER_BOX) {
-            msg(sender, "user.chest.require_trader_type");
-            return;
-        }
-
-        String action = args.next();
-        if (action == null) { // print info
-            Location chestLocation = npc.getChestLocation();
-            msg(sender, "user.chest.status", chestLocation != null);
-            msg(sender, "user.chest.unlimited", npc.npcType == NpcType.TRADER_UNLIMITED);
-            if (chestLocation != null) {
-                msg(sender, "user.chest.chest_pos", chestLocation.getWorld().getName(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());
-                msg(sender, "user.chest.hint_unlink");
-            } else {
-                msg(sender, "user.chest.hint_link");
-            }
-        } else if ("unlink".equalsIgnoreCase(action)) {
-            npc.setChestLocation(null);
-            npc.npcType = NpcType.TRADER_UNLIMITED;
-            plugin.entitiesManager.replaceNpcDefinition(npcId, npc);
-            msg(sender, "user.chest.msg_unlinked");
-        } else if ("link".equalsIgnoreCase(action)) {
-            msg(sender, "user.chest.prompt_click");
-            UUID playerId = asPlayer(sender).getUniqueId();
-            ClickSelectionUtils.registerRightClickBlock(playerId, 15, (Location l) -> {
-                // we are not in the same tick, re-validate everything
-                Player p = Bukkit.getPlayer(playerId);
-                if (p == null || !p.isOnline()) return;
-                if (l == null) {
-                    msg(p, "user.chest.timeout");
-                    return;
-                }
-                NpcData npc2 = asNpcData(npcId);
-                if (npc != npc2) {
-                    msg(sender, "user.chest.npc_changed");
-                    return;
-                }
-                Block b = l.getBlock();
-                if (b == null) {
-                    msg(sender, "user.chest.invalid_chest_block");
-                    return;
-                }
-                Material m = b.getType();
-                if (m != Material.CHEST && m != Material.TRAPPED_CHEST && m != Material.SHULKER_BOX) {
-                    msg(sender, "user.chest.invalid_chest_block");
-                    return;
-                }
-                npc.setChestLocation(l);
-                npc.npcType = NpcType.TRADER_BOX;
-                plugin.entitiesManager.replaceNpcDefinition(npcId, npc);
-                msg(sender, "user.chest.msg_linked");
-            }, plugin);
-        }
-    }
-
-    //@SubCommand(value = "adjust_location", permission = "npc.admin.edit")
-    public void adjustLocation(CommandSender sender, Arguments args) {
-        String npcId = args.nextString();
-        asNpcData(npcId);
-        plugin.entitiesManager.adjustNpcLocation(npcId, sender);
-    }
-
     @SubCommand(value = "debug", permission = "npc.debug")
     public void debugCommand(CommandSender sender, Arguments args) {
         boolean oldStat = NyaaPlayerCoser.debugEnabled;
@@ -644,7 +582,7 @@ public class CommandHandler extends CommandReceiver {
             NpcData data =npc.data;
             Player p = asPlayer(sender);
             UUID pid = p.getUniqueId();
-            if (pid.equals(data.ownerId) && pid.equals(data.hehShopOwnerUUID) && data.npcType == NpcType.HEH_SELL_SHOP) {
+            if (pid.equals(data.ownerId) && pid.equals(data.hehShopOwnerUUID) && data.npcType.equals(NpcTypes.HEH_SELL_SHOP.getId())) {
                 plugin.entitiesManager.removeNpcDefinition(id);
                 msg(sender, "user.hehshop.remove_success");
             } else {
@@ -685,7 +623,7 @@ public class CommandHandler extends CommandReceiver {
                 plugin.cfg.skinData.updateSkinData(skinDataId, sd);
             }
 
-            NpcData data = new NpcData(p.getUniqueId(), spawnLocation, p.getName(), PLAYER, NpcType.HEH_SELL_SHOP, "");
+            NpcData data = new NpcData(p.getUniqueId(), spawnLocation, p.getName(), PLAYER, NpcTypes.HEH_SELL_SHOP.getId(), "");
             data.hehShopOwnerUUID = data.ownerId;
             data.playerSkin = skinDataId;
             String npcId = plugin.entitiesManager.createNpcDefinition(data);
