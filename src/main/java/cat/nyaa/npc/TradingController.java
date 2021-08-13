@@ -9,13 +9,11 @@ import cat.nyaa.npc.events.NpcUndefinedEvent;
 import cat.nyaa.npc.events.TradeRedefinedEvent;
 import cat.nyaa.npc.persistence.NpcData;
 import cat.nyaa.npc.persistence.TradeData;
+import cat.nyaa.npc.utils.RunCommandUtils;
 import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.events.PacketListener;
-//import net.minecraft.world.EnumHand;
-//import net.minecraft.network.protocol.game.PacketPlayInUseEntity;
-import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.EnumWrappers.EntityUseAction;
 import com.comphenix.protocol.wrappers.EnumWrappers.Hand;
 import com.comphenix.protocol.wrappers.WrappedEnumEntityUseAction;
@@ -171,6 +169,14 @@ public class TradingController implements Listener {
                 } catch (ExternalPluginUtils.OperationNotSupportedException ex) {
                     p.sendMessage(I18n.format("user.interact.heh_not_support"));
                 }
+                break;
+            }
+            case COMMAND: {
+                if (data.npcCommand == null || data.npcCommand.equals("")) {
+                    p.sendMessage(I18n.format("user.interact.not_ready"));
+                    break;
+                }
+                RunCommandUtils.executeCommand(p, data.npcCommand, data.commandPermission);
                 break;
             }
             default: {

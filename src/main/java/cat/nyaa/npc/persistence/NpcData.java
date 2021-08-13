@@ -114,6 +114,12 @@ public class NpcData implements ISerializable, Cloneable {
     @Serializable
     public NpcTravelPlan travelPlan = NpcTravelPlan.DO_NOT_TRAVEL;
 
+    // meaningful for COMMAND
+    @Serializable
+    public String npcCommand;
+    @Serializable
+    public String commandPermission;
+
     public int chunkX() {
         return ((int) Math.floor(x)) >> 4;
     }

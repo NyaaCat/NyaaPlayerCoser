@@ -4,6 +4,7 @@ import cat.nyaa.npc.persistence.SkinData;
 import cat.nyaa.nyaacore.cmdreceiver.Arguments;
 import cat.nyaa.nyaacore.cmdreceiver.CommandReceiver;
 import cat.nyaa.nyaacore.cmdreceiver.SubCommand;
+import cat.nyaa.nyaacore.utils.OfflinePlayerUtils;
 import com.google.common.collect.Iterators;
 import com.mojang.authlib.properties.Property;
 import org.bukkit.Bukkit;
@@ -65,7 +66,7 @@ public class CommandHandlerSkin extends CommandReceiver {
             }
         }
 
-        OfflinePlayer p = Bukkit.getOfflinePlayer(playerName);
+        OfflinePlayer p = OfflinePlayerUtils.lookupPlayer(playerName);
         if (p instanceof CraftPlayer) {
             CraftPlayer cp = (CraftPlayer) p;
             Property textures = nullableCall(() -> {

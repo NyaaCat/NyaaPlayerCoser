@@ -24,6 +24,8 @@ user:
         trade      : String.   Create new trade from slot 1/2/3  : trade:+
                                Reuse existing trade              : trade:+<existing_trade_name>
                                Remove trade                      : trade:-<trade_name>
+        command           : String.   Command to be executed.
+        command_permission: String.   Permission that will be given to user executing command.
     invalid_uuid: "Not a valid uuid: %s"
     invalid_location: "Not a valid location: only 'me' is accepted for now"
 

@@ -42,16 +42,23 @@ user:
     heh_not_support: HamsterEcoHelper 插件未找到。你无法与此 NPC 交互。
   playername_length_error: '玩家名称长度应为 3 至 16 个字符。 '
   edit:
-    help_msg: "Usage: /npc edit <npcId> [key:value] ...\nSupported keys:\n  name \
-      \      : String.          NPC display name\n  npctype    : Enum NpcType.   \
-      \ NPC type\n  entitytype : Enum EntityType. NPC entity type\n  owner      :\
-      \ UUID.     Owner of the npc\n  hehowner   : UUID.     The HEH shop to be opened\n\
-      \  nbt        : String.   NBT tag\n  skin       : String.   Skin of the NPC\
-      \ if entitytype is PLAYER\n  location   : String.   Only accepts \"me\" for\
-      \ now.\n                         Make NPC's location the same as the player's.\n\
-      \  trade      : String.   Create new trade from slot 1/2/3  : trade:+\n    \
-      \                     Reuse existing trade              : trade:+<existing_trade_name>\n\
-      \                         Remove trade                      : trade:-<trade_name>"
+    help_msg: |-
+      Usage: /npc edit <npcId> [key:value] ...
+      Supported keys:
+        name       : String.          NPC display name
+        npctype    : Enum NpcType.    NPC type
+        entitytype : Enum EntityType. NPC entity type
+        owner      : UUID.     Owner of the npc
+        hehowner   : UUID.     The HEH shop to be opened
+        nbt        : String.   NBT tag
+        skin       : String.   Skin of the NPC if entitytype is PLAYER
+        location   : String.   Only accepts "me" for now.
+                               Make NPC's location the same as the player's.
+        trade      : String.   Create new trade from slot 1/2/3  : trade:+
+                               Reuse existing trade              : trade:+<existing_trade_name>
+                               Remove trade                      : trade:-<trade_name>
+        command           : String.   Command to be executed.
+        command_permission: String.   Permission that will be given to user executing command.
     invalid_uuid: '无效的 UUID: %s'
     invalid_location: 无效的位置：当前仅支持使用 'me'
     trade_id_created: '新交易 ID: %s'

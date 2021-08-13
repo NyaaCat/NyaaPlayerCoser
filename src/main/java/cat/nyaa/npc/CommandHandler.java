@@ -76,7 +76,7 @@ public class CommandHandler extends CommandReceiver {
             throw new BadCommandException("user.spawn.type_disallow", entityType.name());
         }
         NpcType npctype = args.nextEnum(NpcType.class);
-        if (npctype != NpcType.TRADER_UNLIMITED && npctype != NpcType.HEH_SELL_SHOP) {
+        if (npctype != NpcType.TRADER_UNLIMITED && npctype != NpcType.HEH_SELL_SHOP && npctype != NpcType.COMMAND) {
             throw new BadCommandException("user.spawn.npctype_disallow", npctype.name());
         }
 
@@ -143,7 +143,7 @@ public class CommandHandler extends CommandReceiver {
         String newNpcType = args.argString("npctype", null);
         if (newNpcType != null) {
             NpcType newType = Arguments.parseEnum(NpcType.class, newNpcType);
-            if (newType != NpcType.HEH_SELL_SHOP && newType != NpcType.TRADER_UNLIMITED) {
+            if (newType != NpcType.HEH_SELL_SHOP && newType != NpcType.TRADER_UNLIMITED && newType!=NpcType.COMMAND) {
                 msg(sender, "user.spawn.npctype_disallow", newType.name());
                 return;
             } else {
@@ -272,6 +272,18 @@ public class CommandHandler extends CommandReceiver {
                 data.trades = newTradeList;
             }
             modified = true;
+        }
+
+        String command = args.argString("command", null);
+        if(command != null){
+            data.npcCommand = command;
+            modified=true;
+        }
+
+        String commandPermission = args.argString("command_permission", null);
+        if(commandPermission != null){
+            data.commandPermission = commandPermission;
+            modified=true;
         }
 
         if (modified) {
