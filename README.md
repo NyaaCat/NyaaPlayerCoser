@@ -1,4 +1,4 @@
-# NyaaPlayerCoser [![Build Status](https://ci.nyaacat.com/job/NyaaPlayerCoser/job/1.17/badge/icon)](https://ci.nyaacat.com/job/NyaaPlayerCoser/job/1.17/)
+# NyaaPlayerCoser [![Build Status](https://ci.nyaacat.com/job/NyaaPlayerCoser/job/1.17-baolanlan/badge/icon)](https://ci.nyaacat.com/job/NyaaPlayerCoser/job/1.17-baolanlan/)
 
 NyaaPlayerCoser (NPC) plugin.
 
