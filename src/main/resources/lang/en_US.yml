@@ -3,6 +3,7 @@ user:
   empty_slot: "Slot %s is empty."
   playername_length_error: "Player name should be in between 3 and 16. "
   spawn:
+    invalid_npctype: "Npc type: %s not found,Use \"/npc npctype list\" to list all available npc types."
     type_disallow: EntityType %s is not allowed.
     npctype_disallow: NpcType %s is not allowed.
     not_block: NPCs must be placed on blocks.
@@ -194,3 +195,9 @@ manual:
   adjust_location:
     description: Automatically adjust NPC location.
     usage: /npc adjust_location <npcId>
+  npctype:
+    description: Npc type root command.
+    usage: /npc npctype <subcommand> help
+    list:
+      description: List all npc types.
+      usage: /npc npctype list

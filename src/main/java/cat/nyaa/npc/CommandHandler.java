@@ -56,6 +56,8 @@ public class CommandHandler extends CommandReceiver {
     public CommandHandlerSkin commandSkin;
     @SubCommand(value = "travel", permission = "npc.command.edit")
     public CommandTravelPlan commandTravel;
+    @SubCommand(value = "npctype", permission = "npc.command.npctype")
+    public CommandNpcType commandNpcType;
 
     @SubCommand(value = "reload", permission = "npc.command.reload")
     public void reloadCommand(CommandSender sender, Arguments args) {
@@ -80,6 +82,10 @@ public class CommandHandler extends CommandReceiver {
         }
         //NpcType npctype = args.nextEnum(NpcType.class);
         String npctypeStr = args.nextString();
+        if(!NpcTypes.hasNpcType(npctypeStr)){
+            throw new BadCommandException("user.spawn.invalid_npctype", npctypeStr);
+        }
+
         AbstractNpcType npctype = NpcTypes.getNpcType(npctypeStr);
         if(npctype == null || !npctype.canSpawn(entityType,sender))
             throw new BadCommandException("user.spawn.npctype_disallow", npctypeStr);
@@ -147,7 +153,7 @@ public class CommandHandler extends CommandReceiver {
         String newNpcType = args.argString("npctype", null);
         if (newNpcType != null) {
             if(!NpcTypes.hasNpcType(newNpcType)){
-                msg(sender, "user.spawn.npctype_disallow", newNpcType);
+                msg(sender, "user.spawn.invalid_npctype", newNpcType);
             }
             AbstractNpcType newType = NpcTypes.getNpcType(newNpcType);
             if(newType == null || !newType.canBeSet(data)){

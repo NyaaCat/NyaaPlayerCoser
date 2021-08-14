@@ -1,6 +1,7 @@
 user:
   bad_id: 没有对应 ID 的 NPC。
   spawn:
+    invalid_npctype: "在已加载的NPC类型中没有找到: %s ,使用 \"/npc npctype list\" 去列出所有已加载的NPC类型."
     type_disallow: 不允许 %s 的 NPC 实体类型。
     not_block: NPC 必须放置在方块上。
     not_enough_space: 空间不足以放置 NPC。
@@ -178,3 +179,9 @@ manual:
   adjust_location:
     description: 自动修正 NPC 位置。
     usage: /npc adjust_location <npcId>
+  npctype:
+    description: NPC类型相关命令.
+    usage: /npc npctype <subcommand> help
+    list:
+      description: 列出所有被加载的NPC类型.
+      usage: /npc npctype list
