@@ -19,11 +19,13 @@ public class NPCLiving extends NPCBase {
     public NPCLiving(String id, NpcData data) {
         super(id, data);
     }
+
     @Override
-    public Integer getEntityId(){
-        if(spawnedEntity == null)return -1;
+    public Integer getEntityId() {
+        if (spawnedEntity == null) return null;
         return spawnedEntity.getEntityId();
     }
+
     @Override
     public void onPlayerEnterRange(Player p) {
     }
