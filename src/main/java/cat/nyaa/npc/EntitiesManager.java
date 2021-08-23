@@ -34,7 +34,7 @@ import static cat.nyaa.npc.ephemeral.NPCBase.*;
  * In charge of entity events: spawn, despawn, etc
  * TODO: maybe CommandHandler should be in charge of calling TradingController to refresh player view
  *       rather than create/replace/removeNpcDefinition
- *
+ * <p>
  * A NPC entity should never be stored in disk files.
  * i.e. Entities should be removed when chunk unloads
  * and respawn on chunk load.
@@ -63,10 +63,7 @@ public class EntitiesManager implements Listener {
 
     public void destructor() {
         TICK_LISTENER.cancel();
-        pendingEntityCreation.clear();
-        for (NPCBase npc : idNpcMapping.values()) {
-            npc.despawn(null);
-        }
+        deSpawnAllNpc();
         idNpcMapping.clear();
         HandlerList.unregisterAll(this);
     }
@@ -126,6 +123,19 @@ public class EntitiesManager implements Listener {
      * Scan all worlds and remove npc entities regardless they are traced or not.
      */
     public void forceRespawnAllNpc() {
+        deSpawnAllNpc();
+        for (Map.Entry<String, NpcData> e : plugin.cfg.npcData.npcList.entrySet()) {
+            try {
+                idNpcMapping.put(e.getKey(), NPCBase.fromNpcData(e.getKey(), e.getValue()));
+            } catch (Exception ex) {
+                NyaaPlayerCoser.instance.getLogger().log(Level.WARNING, "invalid npc config, skipping");
+            }
+        }
+
+        pendingEntityCreation.addAll(idNpcMapping.keySet());
+    }
+
+    public void deSpawnAllNpc() {
         pendingEntityCreation.clear();
         for (NPCBase npc : idNpcMapping.values()) {
             npc.despawn(null);
@@ -140,16 +150,6 @@ public class EntitiesManager implements Listener {
                 }
             }
         }
-
-        for (Map.Entry<String, NpcData> e : plugin.cfg.npcData.npcList.entrySet()) {
-            try{
-                idNpcMapping.put(e.getKey(), NPCBase.fromNpcData(e.getKey(), e.getValue()));
-            }catch (Exception ex){
-                NyaaPlayerCoser.instance.getLogger().log(Level.WARNING, "invalid npc config, skipping");
-            }
-        }
-
-        pendingEntityCreation.addAll(idNpcMapping.keySet());
     }
 
     /**
@@ -437,6 +437,25 @@ public class EntitiesManager implements Listener {
         }
     }
 
+    public boolean isValidNyaaNpcOrRemove(Entity e) {
+        if (isValidNyaaNpc(e)) return true;
+        String id = getNyaaNpcId(e);
+        if (id == null) return false;
+        if (!idNpcMapping.containsKey(id)) return false;
+        e.remove();
+        return false;
+    }
+
+    public boolean isValidNyaaNpc(Entity e) {
+        String id = getNyaaNpcId(e);
+        if (id == null) return false;
+        if (idNpcMapping.containsKey(id)) {
+            Integer eId = idNpcMapping.get(id).getEntityId();
+            if (eId == null) return false;
+            return eId == e.getEntityId();
+        }
+        return false;
+    }
     /* ************************** */
     /*       Event handlers       */
     /* ************************** */
@@ -447,7 +466,7 @@ public class EntitiesManager implements Listener {
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onChunkLoad(ChunkLoadEvent ev) {
-        if (ev.isNewChunk()) return;
+        //if (ev.isNewChunk()) return;
         for (Entity e : ev.getChunk().getEntities()) {
             if (isNyaaNPC(e)) {
                 e.remove();
@@ -463,7 +482,7 @@ public class EntitiesManager implements Listener {
      */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onChunkUnLoad(ChunkUnloadEvent ev) {
-        NyaaPlayerCoser.debug(log->log.info(String.format("onChunkUnload %s", ev.getChunk())));
+        NyaaPlayerCoser.debug(log -> log.info(String.format("onChunkUnload %s", ev.getChunk())));
         for (Entity e : ev.getChunk().getEntities()) {
             if (!e.isValid() || e.isDead()) continue;
             String id = getNyaaNpcId(e);
@@ -484,12 +503,15 @@ public class EntitiesManager implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onEntityRemoval(EntityDeathEvent ev) {
         Entity e = ev.getEntity();
+        if (!isValidNyaaNpc(e)) return;
         String id = getNyaaNpcId(e);
         if (id != null) {
-            idNpcMapping.get(id).onEntityRemove(e);
+            if (idNpcMapping.containsKey(id))
+                idNpcMapping.get(id).onEntityRemove(e);
             ev.setDroppedExp(0);
             ev.getDrops().clear();
             pendingEntityCreation.add(id);
+
         }
     }
 
@@ -498,9 +520,9 @@ public class EntitiesManager implements Listener {
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onNPCAttacked(EntityDamageEvent ev) {
-        if (isNyaaNPC(ev.getEntity())) {
-            ev.setCancelled(true);
-        }
+        if (!isValidNyaaNpcOrRemove(ev.getEntity())) return;
+        ev.setCancelled(true);
+
     }
 
 
@@ -537,33 +559,30 @@ public class EntitiesManager implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityCatchFire(EntityCombustEvent ev) {
-        if (NPCBase.isNyaaNPC(ev.getEntity())) {
-            ev.setCancelled(true);
-        }
+        if (!isValidNyaaNpcOrRemove(ev.getEntity())) return;
+        ev.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onCreeperCharge(CreeperPowerEvent ev) {
-        if (NPCBase.isNyaaNPC(ev.getEntity())) {
-            ev.setCancelled(true);
-        }
+        if (!isValidNyaaNpcOrRemove(ev.getEntity())) return;
+        ev.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPigMorph(PigZapEvent ev) {
-        if (NPCBase.isNyaaNPC(ev.getEntity())) {
-            ev.setCancelled(true);
-        }
+        if (!isValidNyaaNpcOrRemove(ev.getEntity())) return;
+        ev.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onLightningStrike(LightningStrikeEvent ev) {
         Location loc = ev.getLightning().getLocation();
+        if (loc.getWorld() == null) return;
         for (Entity e : loc.getWorld().getNearbyEntities(loc, 4, 4, 4)) {
-            if (NPCBase.isNyaaNPC(e)) {
+            if (isValidNyaaNpcOrRemove(e))
                 ev.setCancelled(true);
-                return;
-            }
+            return;
         }
     }
 
@@ -584,7 +603,7 @@ public class EntitiesManager implements Listener {
     }
 
     @EventHandler
-    public void onPlayerJoinWorld(PlayerChangedWorldEvent ev){
+    public void onPlayerJoinWorld(PlayerChangedWorldEvent ev) {
         World fromWorld = ev.getFrom();
         for (NPCBase npc : idNpcMapping.values()) {
             if (npc.data.entityType == EntityType.PLAYER && npc.data.worldName.equals(fromWorld.getName())) {

@@ -18,6 +18,7 @@ import com.comphenix.protocol.wrappers.EnumWrappers.EntityUseAction;
 import com.comphenix.protocol.wrappers.EnumWrappers.Hand;
 import com.comphenix.protocol.wrappers.WrappedEnumEntityUseAction;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -74,7 +75,10 @@ public class TradingController implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerInteractNPC(PlayerInteractEntityEvent ev) {
-        String npcId = NPCBase.getNyaaNpcId(ev.getRightClicked());
+        Entity clickedEntity = ev.getRightClicked();
+        if (plugin.entitiesManager != null)
+            if (!plugin.entitiesManager.isValidNyaaNpcOrRemove(clickedEntity)) return;
+        String npcId = NPCBase.getNyaaNpcId(clickedEntity);
         if (npcId == null) {
             return; // skip if not a nyaa npc
         }

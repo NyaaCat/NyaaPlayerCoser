@@ -72,6 +72,11 @@ public class NPCPlayer extends NPCBase {
     private byte pitch = 0;
     private byte yaw = 0;
 
+    @Override
+    public Integer getEntityId() {
+        return this.entityId;
+    }
+
     public NPCPlayer(String id, NpcData data) {
         super(id, data);
         if (data.entityType != EntityType.PLAYER) throw new IllegalArgumentException("not a player npc");
