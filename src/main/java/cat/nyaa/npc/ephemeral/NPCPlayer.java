@@ -91,7 +91,11 @@ public class NPCPlayer extends NPCBase {
         // https://wiki.vg/Entity_metadata#Entity
         // https://github.com/dmulloy2/ProtocolLib/issues/160#issuecomment-192983554
         //dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(10, WrappedDataWatcher.Registry.get(Integer.class)), 3);
-        dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(16, WrappedDataWatcher.Registry.get(Byte.class)), Byte.valueOf((byte) skin.displayMask));
+        if (VersionUtils.isVersionGreaterOrEq(VersionUtils.getCurrentVersion(), "1.17")) {
+            dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(17, WrappedDataWatcher.Registry.get(Byte.class)), (byte) skin.displayMask, true);
+        } else if (VersionUtils.isVersionGreaterOrEq(VersionUtils.getCurrentVersion(), "1.16")) {
+            dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(16, WrappedDataWatcher.Registry.get(Byte.class)), (byte) skin.displayMask, true);
+        }
 
         World w = Bukkit.getWorld(data.worldName);
         if (w == null) throw new IllegalArgumentException();
@@ -124,7 +128,7 @@ public class NPCPlayer extends NPCBase {
                 PacketContainer packetContainer = new PacketContainer(PacketType.Play.Server.ENTITY_METADATA);
                 List<WrappedWatchableObject> watchableObjects = dataWatcher.getWatchableObjects();
                 packetContainer.getIntegers().write(0, entityId);
-                packetContainer.getLists(BukkitConverters.getWatchableObjectConverter()).write(0, watchableObjects);
+                packetContainer.getWatchableCollectionModifier().write(0, watchableObjects);
                 ExternalPluginUtils.getPM().sendServerPacket(p, packetContainer);
 
                 Bukkit.getScheduler().runTaskLater(NyaaPlayerCoser.instance, new Runnable() {
