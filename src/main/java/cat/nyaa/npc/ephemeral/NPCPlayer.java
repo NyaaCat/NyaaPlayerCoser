@@ -19,6 +19,8 @@ import org.bukkit.entity.Player;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -29,6 +31,7 @@ public class NPCPlayer extends NPCBase {
     // Use a high starting value to avoid conflicts with real entity IDs
     private static final AtomicInteger ENTITY_ID_COUNTER = new AtomicInteger(Integer.MAX_VALUE / 2);
     public static final Map<Integer, NPCPlayer> spawnedDummyNPCs = new HashMap<>(); // map<entityId, NpcPlayer>
+    private static final Integer PLAYER_SKIN_PARTS_INDEX = resolvePlayerSkinPartsIndex();
 
     public static UUID getVersion2UUID() {
         return getVersion2UUID(null);
@@ -94,7 +97,12 @@ public class NPCPlayer extends NPCBase {
         // https://github.com/dmulloy2/ProtocolLib/issues/160#issuecomment-192983554
         //dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(10, WrappedDataWatcher.Registry.get(Integer.class)), 3);
         if (VersionUtils.isVersionGreaterOrEq(VersionUtils.getCurrentVersion(), "1.17")) {
-            dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(17, WrappedDataWatcher.Registry.get(Byte.class)), (byte) skin.displayMask, true);
+            Integer skinPartsIndex = PLAYER_SKIN_PARTS_INDEX;
+            if (skinPartsIndex != null) {
+                dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(skinPartsIndex, WrappedDataWatcher.Registry.get(Byte.class)), (byte) skin.displayMask, true);
+            } else {
+                dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(17, WrappedDataWatcher.Registry.get(Byte.class)), (byte) skin.displayMask, true);
+            }
         } else if (VersionUtils.isVersionGreaterOrEq(VersionUtils.getCurrentVersion(), "1.16")) {
             dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(16, WrappedDataWatcher.Registry.get(Byte.class)), (byte) skin.displayMask, true);
         }
@@ -369,6 +377,37 @@ public class NPCPlayer extends NPCBase {
         } catch (Exception ignored) {
             // ignore if structure differs
         }
+    }
+
+    private static Integer resolvePlayerSkinPartsIndex() {
+        try {
+            Class<?> avatarClass = Class.forName("net.minecraft.world.entity.Avatar");
+            Integer result = readDataAccessorId(avatarClass, "DATA_PLAYER_MODE_CUSTOMISATION", "DATA_PLAYER_MODE_CUSTOMIZATION");
+            if (result != null) {
+                return result;
+            }
+        } catch (ClassNotFoundException ignored) {
+            // fall back to version-based indices
+        }
+        return null;
+    }
+
+    private static Integer readDataAccessorId(Class<?> holderClass, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            try {
+                Field field = holderClass.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                Object accessor = field.get(null);
+                Method idMethod = accessor.getClass().getMethod("id");
+                Object value = idMethod.invoke(accessor);
+                if (value instanceof Integer) {
+                    return (Integer) value;
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // try next candidate
+            }
+        }
+        return null;
     }
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static EnumSet buildGenericActionSet(EnumWrappers.PlayerInfoAction action) {
