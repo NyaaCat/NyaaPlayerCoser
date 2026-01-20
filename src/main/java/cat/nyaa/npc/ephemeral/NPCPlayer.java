@@ -187,9 +187,7 @@ public class NPCPlayer extends NPCBase {
 
     private static PacketContainer buildPlayerInfoPacket(EnumWrappers.PlayerInfoAction action, PlayerInfoData playerInfoData) {
         PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
-        if (packet.getPlayerInfoActions().size() > 0) {
-            packet.getPlayerInfoActions().write(0, EnumSet.of(action));
-        } else {
+        if (!writePlayerInfoActions(packet, action)) {
             packet.getPlayerInfoAction().write(0, action);
         }
         packet.getPlayerInfoDataLists().write(0, Collections.singletonList(playerInfoData));
@@ -256,6 +254,37 @@ public class NPCPlayer extends NPCBase {
     @Override
     public SanityCheckResult doSanityCheck() {
         return SanityCheckResult.SKIPPED;
+    }
+
+    private static boolean writePlayerInfoActions(PacketContainer packet, EnumWrappers.PlayerInfoAction action) {
+        try {
+            var modifier = packet.getModifier().withType(EnumSet.class);
+            if (modifier.size() > 0) {
+                modifier.write(0, buildGenericActionSet(action));
+                return true;
+            }
+        } catch (Exception ignored) {
+            // fall through
+        }
+        return false;
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static EnumSet buildGenericActionSet(EnumWrappers.PlayerInfoAction action) {
+        Class<?> actionClass = EnumWrappers.getPlayerInfoActionClass();
+        if (actionClass == null) {
+            return EnumSet.of(action);
+        }
+        EnumSet set = EnumSet.noneOf((Class) actionClass);
+        try {
+            Object generic = EnumWrappers.getPlayerInfoActionConverter().getGeneric(action);
+            if (generic instanceof Enum) {
+                set.add((Enum) generic);
+            }
+        } catch (Exception ignored) {
+            // leave empty; caller will handle failures
+        }
+        return set;
     }
 
     private Location resolveLocation() {
