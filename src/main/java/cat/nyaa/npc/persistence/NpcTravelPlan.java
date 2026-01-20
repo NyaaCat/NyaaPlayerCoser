@@ -106,10 +106,16 @@ public class NpcTravelPlan implements ISerializable, Cloneable {
         }
 
         if (isPresent) {
-            data.trades = new ArrayList<>(
-                    MathUtils.randomSelect(
-                            completeTradeIdList,
-                            MathUtils.uniformRangeInclusive(availableTradeMin, availableTradeMax)));
+            int tradeCount = 0;
+            if (availableTradeMax >= availableTradeMin && availableTradeMax > 0 && !completeTradeIdList.isEmpty()) {
+                int boundedMax = Math.min(availableTradeMax, completeTradeIdList.size());
+                if (boundedMax >= availableTradeMin) {
+                    tradeCount = MathUtils.uniformRangeInclusive(availableTradeMin, boundedMax);
+                }
+            }
+            data.trades = tradeCount > 0
+                    ? new ArrayList<>(MathUtils.randomSelect(completeTradeIdList, tradeCount))
+                    : new ArrayList<>();
             World w = Bukkit.getWorld(data.worldName);
             if (w != null) {
                 Location l = getRandomizedLegLocation(w);
