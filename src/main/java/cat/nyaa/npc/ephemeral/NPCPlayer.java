@@ -7,6 +7,7 @@ import cat.nyaa.npc.persistence.SkinData;
 import cat.nyaa.nyaacore.utils.VersionUtils;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.wrappers.BukkitConverters;
 import com.comphenix.protocol.wrappers.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -186,11 +187,11 @@ public class NPCPlayer extends NPCBase {
     }
 
     private static PacketContainer buildPlayerInfoPacket(EnumWrappers.PlayerInfoAction action, PlayerInfoData playerInfoData) {
-        PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
+        PacketContainer packet = new PacketContainer(getPlayerInfoPacketType());
         if (!writePlayerInfoActions(packet, action)) {
             packet.getPlayerInfoAction().write(0, action);
         }
-        packet.getPlayerInfoDataLists().write(0, Collections.singletonList(playerInfoData));
+        writePlayerInfoDataList(packet, Collections.singletonList(playerInfoData));
         return packet;
     }
 
@@ -201,6 +202,19 @@ public class NPCPlayer extends NPCBase {
             return packet;
         }
         return buildPlayerInfoPacket(EnumWrappers.PlayerInfoAction.REMOVE_PLAYER, playerInfoData);
+    }
+
+    private static PacketType getPlayerInfoPacketType() {
+        try {
+            var field = PacketType.Play.Server.class.getField("PLAYER_INFO_UPDATE");
+            PacketType packetType = (PacketType) field.get(null);
+            if (packetType != null && packetType.isSupported()) {
+                return packetType;
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // fall through to legacy packet type
+        }
+        return PacketType.Play.Server.PLAYER_INFO;
     }
 
     @Override
@@ -267,6 +281,20 @@ public class NPCPlayer extends NPCBase {
             // fall through
         }
         return false;
+    }
+
+    private static void writePlayerInfoDataList(PacketContainer packet, List<PlayerInfoData> playerInfoDataList) {
+        try {
+            var listModifier = packet.getModifier().withType(List.class,
+                    BukkitConverters.getListConverter(PlayerInfoData.getConverter()));
+            if (listModifier.size() > 0) {
+                listModifier.write(0, playerInfoDataList);
+                return;
+            }
+        } catch (Exception ignored) {
+            // fall back to legacy accessor
+        }
+        packet.getPlayerInfoDataLists().write(0, playerInfoDataList);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
