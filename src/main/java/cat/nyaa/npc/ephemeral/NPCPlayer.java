@@ -119,9 +119,8 @@ public class NPCPlayer extends NPCBase {
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktSpawn);
 
                 PacketContainer packetContainer = new PacketContainer(PacketType.Play.Server.ENTITY_METADATA);
-                List<WrappedWatchableObject> watchableObjects = dataWatcher.getWatchableObjects();
                 packetContainer.getIntegers().write(0, entityId);
-                packetContainer.getWatchableCollectionModifier().write(0, watchableObjects);
+                writeEntityMetadata(packetContainer, dataWatcher);
                 ExternalPluginUtils.getPM().sendServerPacket(p, packetContainer);
 
                 Bukkit.getScheduler().runTaskLater(NyaaPlayerCoser.instance, new Runnable() {
@@ -351,6 +350,22 @@ public class NPCPlayer extends NPCBase {
                 packet.getIntegers().write(4, (int) (pitch * 256.0F / 360.0F));
                 packet.getIntegers().write(5, (int) (yaw * 256.0F / 360.0F));
             }
+        } catch (Exception ignored) {
+            // ignore if structure differs
+        }
+    }
+
+    private static void writeEntityMetadata(PacketContainer packet, WrappedDataWatcher watcher) {
+        try {
+            if (packet.getDataValueCollectionModifier().size() > 0) {
+                packet.getDataValueCollectionModifier().write(0, watcher.toDataValueCollection());
+                return;
+            }
+        } catch (Exception ignored) {
+            // fall back to legacy watchable objects
+        }
+        try {
+            packet.getWatchableCollectionModifier().write(0, watcher.getWatchableObjects());
         } catch (Exception ignored) {
             // ignore if structure differs
         }
