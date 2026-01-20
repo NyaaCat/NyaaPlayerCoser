@@ -86,7 +86,7 @@ public class NPCPlayer extends NPCBase {
 
         profile = new WrappedGameProfile(getVersion2UUID(), data.displayName);
         SkinData skin = NyaaPlayerCoser.instance.cfg.skinData.getSkinData(data.playerSkin);
-        profile.getProperties().put("textures", new WrappedSignedProperty("textures", skin.texture_value, skin.texture_signature));
+        profile.getProperties().put("textures", createTextureProperty(skin));
 
         dataWatcher = new WrappedDataWatcher();
         // https://wiki.vg/Entity_metadata#Entity
@@ -98,9 +98,7 @@ public class NPCPlayer extends NPCBase {
             dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(16, WrappedDataWatcher.Registry.get(Byte.class)), (byte) skin.displayMask, true);
         }
 
-        World w = Bukkit.getWorld(data.worldName);
-        if (w == null) throw new IllegalArgumentException();
-        loc = new Location(w, data.x, data.y, data.z);
+        loc = resolveLocation();
     }
 
     @Override
@@ -108,6 +106,10 @@ public class NPCPlayer extends NPCBase {
         if (spawned && !inRangePlayers.contains(p)) {
             inRangePlayers.add(p);
             try {
+                Location currentLoc = resolveLocation();
+                if (currentLoc == null) {
+                    return;
+                }
                 PlayerInfoData playerInfoData = new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.CREATIVE, WrappedChatComponent.fromText(data.displayName));
                 PacketContainer pktList = buildPlayerInfoPacket(EnumWrappers.PlayerInfoAction.ADD_PLAYER, playerInfoData);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
@@ -115,9 +117,9 @@ public class NPCPlayer extends NPCBase {
                 PacketContainer pktSpawn = new PacketContainer(PacketType.Play.Server.NAMED_ENTITY_SPAWN);
                 pktSpawn.getIntegers().write(0, entityId);
                 pktSpawn.getUUIDs().write(0, playerInfoData.getProfile().getUUID());
-                pktSpawn.getDoubles().write(0, loc.getX());
-                pktSpawn.getDoubles().write(1, loc.getY());
-                pktSpawn.getDoubles().write(2, loc.getZ());
+                pktSpawn.getDoubles().write(0, currentLoc.getX());
+                pktSpawn.getDoubles().write(1, currentLoc.getY());
+                pktSpawn.getDoubles().write(2, currentLoc.getZ());
                 pktSpawn.getBytes().write(0, yaw); // yaw
                 pktSpawn.getBytes().write(1, pitch); // pitch
 //                 pktSpawn.getDataWatcherModifier().write(0, dataWatcher);
@@ -241,7 +243,9 @@ public class NPCPlayer extends NPCBase {
     @Override
     public Location getEyeLocation() {
         if (!spawned || inRangePlayers.isEmpty()) return null;
-        return loc.clone().add(0, 1.62, 0);
+        Location currentLoc = resolveLocation();
+        if (currentLoc == null) return null;
+        return currentLoc.clone().add(0, 1.62, 0);
     }
 
     @Override
@@ -252,5 +256,32 @@ public class NPCPlayer extends NPCBase {
     @Override
     public SanityCheckResult doSanityCheck() {
         return SanityCheckResult.SKIPPED;
+    }
+
+    private Location resolveLocation() {
+        World w = Bukkit.getWorld(data.worldName);
+        if (w == null) return null;
+        if (loc == null || loc.getWorld() != w) {
+            loc = new Location(w, data.x, data.y, data.z);
+        } else {
+            loc.setX(data.x);
+            loc.setY(data.y);
+            loc.setZ(data.z);
+        }
+        return loc;
+    }
+
+    private WrappedSignedProperty createTextureProperty(SkinData skin) {
+        SkinData resolved = skin;
+        if (resolved == null || resolved.texture_value == null || resolved.texture_signature == null
+                || resolved.texture_value.isEmpty() || resolved.texture_signature.isEmpty()) {
+            resolved = NyaaPlayerCoser.instance.cfg.skinData.getSkinData("default");
+        }
+        try {
+            return new WrappedSignedProperty("textures", resolved.texture_value, resolved.texture_signature);
+        } catch (Exception ex) {
+            SkinData fallback = NyaaPlayerCoser.instance.cfg.skinData.getSkinData("default");
+            return new WrappedSignedProperty("textures", fallback.texture_value, fallback.texture_signature);
+        }
     }
 }
