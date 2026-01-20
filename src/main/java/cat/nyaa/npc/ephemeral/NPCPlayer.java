@@ -115,15 +115,7 @@ public class NPCPlayer extends NPCBase {
                 PacketContainer pktList = buildPlayerInfoPacket(EnumWrappers.PlayerInfoAction.ADD_PLAYER, playerInfoData);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
 
-                PacketContainer pktSpawn = new PacketContainer(PacketType.Play.Server.NAMED_ENTITY_SPAWN);
-                pktSpawn.getIntegers().write(0, entityId);
-                pktSpawn.getUUIDs().write(0, playerInfoData.getProfile().getUUID());
-                pktSpawn.getDoubles().write(0, currentLoc.getX());
-                pktSpawn.getDoubles().write(1, currentLoc.getY());
-                pktSpawn.getDoubles().write(2, currentLoc.getZ());
-                pktSpawn.getBytes().write(0, yaw); // yaw
-                pktSpawn.getBytes().write(1, pitch); // pitch
-//                 pktSpawn.getDataWatcherModifier().write(0, dataWatcher);
+                PacketContainer pktSpawn = buildPlayerSpawnPacket(currentLoc, entityId, playerInfoData.getProfile().getUUID(), yaw, pitch);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktSpawn);
 
                 PacketContainer packetContainer = new PacketContainer(PacketType.Play.Server.ENTITY_METADATA);
@@ -217,6 +209,30 @@ public class NPCPlayer extends NPCBase {
         return PacketType.Play.Server.PLAYER_INFO;
     }
 
+    private static PacketContainer buildPlayerSpawnPacket(Location location, int entityId, UUID uuid, byte yaw, byte pitch) {
+        PacketType packetType = resolvePlayerSpawnPacketType();
+        PacketContainer packet;
+        try {
+            packet = new PacketContainer(packetType);
+        } catch (IllegalArgumentException ex) {
+            packetType = PacketType.Play.Server.SPAWN_ENTITY;
+            packet = new PacketContainer(packetType);
+        }
+        packet.getModifier().writeDefaults();
+        packet.getIntegers().write(0, entityId);
+        packet.getUUIDs().write(0, uuid);
+        packet.getDoubles().write(0, location.getX());
+        packet.getDoubles().write(1, location.getY());
+        packet.getDoubles().write(2, location.getZ());
+        if (packetType != PacketType.Play.Server.SPAWN_ENTITY) {
+            packet.getBytes().write(0, yaw);
+            packet.getBytes().write(1, pitch);
+        } else {
+            packet.getEntityTypeModifier().write(0, EntityType.PLAYER);
+            writeSpawnRotation(packet, yaw, pitch);
+        }
+        return packet;
+    }
     @Override
     public void spawn() {
         spawned = true;
@@ -297,6 +313,48 @@ public class NPCPlayer extends NPCBase {
         packet.getPlayerInfoDataLists().write(0, playerInfoDataList);
     }
 
+    private static PacketType resolvePlayerSpawnPacketType() {
+        List<String> candidates = Arrays.asList(
+                "PLAYER_SPAWN",
+                "SPAWN_PLAYER",
+                "NAMED_ENTITY_SPAWN"
+        );
+        for (String fieldName : candidates) {
+            try {
+                var field = PacketType.Play.Server.class.getField(fieldName);
+                PacketType packetType = (PacketType) field.get(null);
+                if (packetType != null && packetType.isSupported()) {
+                    return packetType;
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // try next candidate
+            }
+        }
+        return PacketType.Play.Server.SPAWN_ENTITY;
+    }
+
+    private static void writeSpawnRotation(PacketContainer packet, byte yaw, byte pitch) {
+        try {
+            if (packet.getBytes().size() >= 2) {
+                packet.getBytes().write(0, yaw);
+                packet.getBytes().write(1, pitch);
+                if (packet.getBytes().size() > 2) {
+                    packet.getBytes().write(2, yaw);
+                }
+                return;
+            }
+        } catch (Exception ignored) {
+            // fall through to integer rotation
+        }
+        try {
+            if (packet.getIntegers().size() >= 6) {
+                packet.getIntegers().write(4, (int) (pitch * 256.0F / 360.0F));
+                packet.getIntegers().write(5, (int) (yaw * 256.0F / 360.0F));
+            }
+        } catch (Exception ignored) {
+            // ignore if structure differs
+        }
+    }
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static EnumSet buildGenericActionSet(EnumWrappers.PlayerInfoAction action) {
         Class<?> actionClass = EnumWrappers.getPlayerInfoActionClass();

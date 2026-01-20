@@ -31,7 +31,7 @@ repositories {
     mavenCentral()
     maven { name 'Paper'; url 'https://repo.papermc.io/repository/maven-public/' }
     maven { name 'NyaaCat'; url 'https://ci.nyaacat.com/maven/' }
-    maven { name 'dmulloy-repo'; url 'https://repo.dmulloy2.net/nexus/repository/public/' } // ProtocolLib
+    maven { name 'JitPack'; url 'https://jitpack.io' } // ProtocolLib (master)
     maven { name 'aikar'; url 'https://repo.aikar.co/content/groups/aikar/' }
 }
 
@@ -46,7 +46,7 @@ dependencies {
     compileOnly('cat.nyaa:nyaacore:9.10') { transitive = false }
 
     // 3rd party plugins
-    compileOnly('com.comphenix.protocol:ProtocolLib:5.1.0') { transitive = false }
+    compileOnly('com.github.dmulloy2:ProtocolLib:master-SNAPSHOT') { transitive = false }
 }
 
 // source file modification (modify version string)
