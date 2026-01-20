@@ -12,15 +12,14 @@ import cat.nyaa.nyaacore.cmdreceiver.SubCommand;
 import cat.nyaa.nyaacore.utils.ClickSelectionUtils;
 import cat.nyaa.nyaacore.utils.HexColorUtils;
 import cat.nyaa.nyaacore.utils.RayTraceUtils;
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.mojang.authlib.properties.Property;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -675,8 +674,14 @@ public class CommandHandler extends CommandReceiver {
                 }
             }
 
-            CraftPlayer cp = (CraftPlayer) p;
-            Property texture = Iterables.getFirst(cp.getProfile().getProperties().get("textures"), null);
+            PlayerProfile profile = p.getPlayerProfile();
+            ProfileProperty texture = null;
+            for (ProfileProperty prop : profile.getProperties()) {
+                if (prop.getName().equals("textures")) {
+                    texture = prop;
+                    break;
+                }
+            }
             String skinDataId = "default";
             if (texture != null) {
                 skinDataId = "hehshop:" + p.getUniqueId().toString();

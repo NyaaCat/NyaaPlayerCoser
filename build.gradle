@@ -1,77 +1,52 @@
-apply plugin: "java-library"
-apply plugin: "maven-publish"
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
 
 // Plugin config
 ext.pluginNameUpper = "NyaaPlayerCoser"
 ext.pluginNameLower = ext.pluginNameUpper.toLowerCase()
 ext.majorVersion = 8
-ext.minorVersion = 1
-ext.minecraftVersion = "1.17"
-sourceCompatibility = 16
-targetCompatibility = 16
+ext.minorVersion = 2
+ext.minecraftVersion = "1.21.11"
 
 // Suppiled by Jenkins
-ext.buildNumber = System.env.BUILD_NUMBER == null ? "x"                : "$System.env.BUILD_NUMBER"
+ext.buildNumber = System.env.BUILD_NUMBER == null ? "SNAPSHOT" : "$System.env.BUILD_NUMBER"
 ext.mavenDirectory = System.env.MAVEN_DIR == null ? "$projectDir/repo" : "$System.env.MAVEN_DIR"
-ext.jdDirectory = System.env.JAVADOCS_DIR == null ? null               : "$System.env.JAVADOCS_DIR"
+ext.jdDirectory = System.env.JAVADOCS_DIR == null ? null : "$System.env.JAVADOCS_DIR"
 
-// Search for spigot nms jar file
-String spigotNmsPath = ""
-if (System.env.NMS_JAR != null) {
-    // use NMS_JAR if it's explicitly specified
-    spigotNmsPath = "$System.env.NMS_JAR"
-    if (new File(spigotNmsPath).exists()) {
-        logger.warn("NMS jar is set manually: ${spigotNmsPath}")
-    } else {
-        throw new GradleException("NMS jar not found: ${spigotNmsPath}")
-    }
-} else if (new File("${mavenDirectory}/spigot-${minecraftVersion}-latest.jar").exists()) {
-    // ci environment
-    spigotNmsPath = "${mavenDirectory}/spigot-${minecraftVersion}-latest.jar"
-} else {
-    // check local dir (dev environment)
-    spigotNmsPath = "${projectDir}/../nms_binaries/spigot-${minecraftVersion}.jar"
-    if (!(new File(spigotNmsPath).exists())) {
-        // nms not found, download from nyaaci
-        def f = new File(spigotNmsPath)
-        println "Downloading spigot-${minecraftVersion}.jar"
-        f.getParentFile().mkdirs()
-        new URL("https://ci.nyaacat.com/maven/spigot-${minecraftVersion}-latest.jar").withInputStream{ i -> f.withOutputStream{ it << i }}
-    }
-}
-println ("Found NMS jar: ${spigotNmsPath}")
-
-// Version used for distribution. Different from maven repo
+// Version used for distribution
 group = "cat.nyaa"
 archivesBaseName = "${pluginNameUpper}-mc$minecraftVersion"
 version = "$majorVersion.$minorVersion.$buildNumber".toString()
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 // Repositories and dependencies
 repositories {
-    //jcenter()
     mavenCentral()
-    maven { name 'Spigot';      url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
-    maven { name 'Sonatype';    url 'https://oss.sonatype.org/content/groups/public' }
-    maven { name 'NyaaCat';     url 'https://ci.nyaacat.com/maven/' }
-    maven { name 'dmulloy-repo';url 'https://repo.dmulloy2.net/nexus/repository/public/' } // ProtocolLib
-    maven { name 'aikar';     url 'https://repo.aikar.co/content/groups/aikar/' }
+    maven { name 'Paper'; url 'https://repo.papermc.io/repository/maven-public/' }
+    maven { name 'NyaaCat'; url 'https://ci.nyaacat.com/maven/' }
+    maven { name 'dmulloy-repo'; url 'https://repo.dmulloy2.net/nexus/repository/public/' } // ProtocolLib
+    maven { name 'aikar'; url 'https://repo.aikar.co/content/groups/aikar/' }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
 }
 
 dependencies {
-    compileOnly "org.spigotmc:spigot-api:$minecraftVersion-R0.1-SNAPSHOT"
-    compileOnly files(spigotNmsPath)
+    compileOnly "io.papermc.paper:paper-api:$minecraftVersion-R0.1-SNAPSHOT"
 
     // other nyaa plugins
-    if (gradle.hasProperty("useLocalDependencies") && gradle.useLocalDependencies) {
-        compileOnly project(":NyaaCore")
-        compileOnly project(":HamsterEcoHelper")
-    } else {
-        compileOnly('cat.nyaa:nyaacore:8.1-SNAPSHOT') { transitive = false }
-        compileOnly('cat.nyaa:hamsterecohelper:8.1-SNAPSHOT')
-    }
+    compileOnly('cat.nyaa:nyaacore:9.10') { transitive = false }
 
     // 3rd party plugins
-    compileOnly ('com.comphenix.protocol:ProtocolLib:4.7.0') { transitive = false }
+    compileOnly('com.comphenix.protocol:ProtocolLib:5.1.0') { transitive = false }
 }
 
 // source file modification (modify version string)
@@ -89,21 +64,17 @@ task sourcesJar(type: Jar) {
 
 // javadoc generation options
 javadoc {
-    // javadoc output folder
     if (project.jdDirectory != null) destinationDir = file("${jdDirectory}/${pluginNameLower}-${version}")
 
-    (options as StandardJavadocDocletOptions).with  {
-        links 'https://docs.oracle.com/en/java/javase/16/docs/api/'
-        links 'https://hub.spigotmc.org/javadocs/spigot/'
-        links 'https://google.github.io/guava/releases/21.0/api/docs/'
-        links 'https://ci.md-5.net/job/BungeeCord/ws/chat/target/apidocs/'
+    (options as StandardJavadocDocletOptions).with {
+        links 'https://docs.oracle.com/en/java/javase/21/docs/api/'
+        links 'https://jd.papermc.io/paper/1.21/'
 
         locale 'en_US'
         encoding 'UTF-8'
         docEncoding 'UTF-8'
         addBooleanOption('keywords', true)
         addStringOption('Xdoclint:none', '-quiet')
-
         options.addBooleanOption('html5', true)
 
         windowTitle = "${pluginNameUpper} Javadoc"
@@ -126,9 +97,9 @@ compileJava {
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            group      project.group
+            group project.group
             artifactId pluginNameLower
-            version    "$majorVersion.$minorVersion-SNAPSHOT"
+            version "$majorVersion.$minorVersion-SNAPSHOT"
 
             from components.java
             artifact sourcesJar
@@ -141,5 +112,3 @@ publishing {
         }
     }
 }
-
-

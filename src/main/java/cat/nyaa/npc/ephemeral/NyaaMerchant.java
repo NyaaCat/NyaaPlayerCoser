@@ -3,9 +3,12 @@ package cat.nyaa.npc.ephemeral;
 import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.npc.persistence.NpcData;
 import cat.nyaa.npc.persistence.TradeData;
-import org.bukkit.craftbukkit.v1_17_R1.inventory.CraftMerchantCustom;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.Merchant;
 import org.bukkit.inventory.MerchantInventory;
 import org.bukkit.inventory.MerchantRecipe;
 
@@ -14,17 +17,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class NyaaMerchant extends CraftMerchantCustom {
+public class NyaaMerchant implements Merchant {
     private final String id;
     private final NpcData data;
+    private final Merchant delegate;
     private InventoryView openedInventoryView = null;
 
     private static final Map<Inventory, NyaaMerchant> merchantLookupMap = new HashMap<>();
 
     public NyaaMerchant(String npcId, NpcData data) {
-        super(data.displayName);
         this.id = npcId;
         this.data = data;
+        this.delegate = Bukkit.createMerchant(Component.text(data.displayName));
 
         List<MerchantRecipe> recipes = new ArrayList<>();
         Map<String, TradeData> tradeList = NyaaPlayerCoser.instance.cfg.tradeData.tradeList;
@@ -36,7 +40,7 @@ public class NyaaMerchant extends CraftMerchantCustom {
                 throw new RuntimeException(); // FIXME
             }
         }
-        setRecipes(recipes);
+        delegate.setRecipes(recipes);
     }
 
     public String getNpcId() {
@@ -46,7 +50,6 @@ public class NyaaMerchant extends CraftMerchantCustom {
     public NpcData getNpcData() {
         return data;
     }
-
 
     public void registerLookup(InventoryView inv) {
         if (openedInventoryView != null) throw new IllegalArgumentException("inv view double set.");
@@ -68,5 +71,39 @@ public class NyaaMerchant extends CraftMerchantCustom {
         return merchantLookupMap.get(inv);
     }
 
+    // Merchant interface delegation
+    @Override
+    public List<MerchantRecipe> getRecipes() {
+        return delegate.getRecipes();
+    }
 
+    @Override
+    public void setRecipes(List<MerchantRecipe> recipes) {
+        delegate.setRecipes(recipes);
+    }
+
+    @Override
+    public MerchantRecipe getRecipe(int i) throws IndexOutOfBoundsException {
+        return delegate.getRecipe(i);
+    }
+
+    @Override
+    public void setRecipe(int i, MerchantRecipe recipe) throws IndexOutOfBoundsException {
+        delegate.setRecipe(i, recipe);
+    }
+
+    @Override
+    public int getRecipeCount() {
+        return delegate.getRecipeCount();
+    }
+
+    @Override
+    public boolean isTrading() {
+        return delegate.isTrading();
+    }
+
+    @Override
+    public HumanEntity getTrader() {
+        return delegate.getTrader();
+    }
 }

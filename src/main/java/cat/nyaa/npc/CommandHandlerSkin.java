@@ -5,18 +5,15 @@ import cat.nyaa.nyaacore.cmdreceiver.Arguments;
 import cat.nyaa.nyaacore.cmdreceiver.CommandReceiver;
 import cat.nyaa.nyaacore.cmdreceiver.SubCommand;
 import cat.nyaa.nyaacore.utils.OfflinePlayerUtils;
-import com.google.common.collect.Iterators;
-import com.mojang.authlib.properties.Property;
-import org.bukkit.Bukkit;
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_17_R1.CraftOfflinePlayer;
-import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Supplier;
 
 public class CommandHandlerSkin extends CommandReceiver {
     private final NyaaPlayerCoser plugin;
@@ -45,14 +42,6 @@ public class CommandHandlerSkin extends CommandReceiver {
         }
     }
 
-    public static <T> T nullableCall(Supplier<T> statement) {
-        try {
-            return statement.get();
-        } catch (NullPointerException exc) {
-            return null;
-        }
-    }
-
     @SubCommand(value = "pin", permission = "npc.command.skin")
     public void pinSkin(CommandSender sender, Arguments args) {
         // /npc skin pin <playerName> [follow] [skinId]
@@ -67,32 +56,26 @@ public class CommandHandlerSkin extends CommandReceiver {
         }
 
         OfflinePlayer p = OfflinePlayerUtils.lookupPlayer(playerName);
-        if (p instanceof CraftPlayer) {
-            CraftPlayer cp = (CraftPlayer) p;
-            Property textures = nullableCall(() -> {
-                return Iterators.get(
-                        cp.getProfile().getProperties().get("textures").iterator(), 0, null);
-            });
-            if (textures == null || !textures.hasSignature()) {
-                msg(sender, "user.skin.pin_fail");
-            } else {
-                SkinData sd = new SkinData(skinId, playerName, textures, follow ? cp.getUniqueId() : null);
-                plugin.cfg.skinData.updateSkinData(skinId, sd);
-                msg(sender, "user.skin.pin_success");
+        if (p == null) {
+            msg(sender, "user.skin.pin_fail");
+            return;
+        }
+
+        PlayerProfile profile = p.getPlayerProfile();
+        ProfileProperty textures = null;
+        for (ProfileProperty prop : profile.getProperties()) {
+            if (prop.getName().equals("textures")) {
+                textures = prop;
+                break;
             }
-        } else if (p instanceof CraftOfflinePlayer) {
-            CraftOfflinePlayer cop = (CraftOfflinePlayer) p;
-            Property textures = nullableCall(() -> {
-                return Iterators.get(
-                        cop.getProfile().getProperties().get("textures").iterator(), 0, null);
-            });
-            if (textures == null || !textures.hasSignature()) {
-                msg(sender, "user.skin.pin_fail");
-            } else {
-                SkinData sd = new SkinData(skinId, playerName, textures, follow ? cop.getUniqueId() : null);
-                plugin.cfg.skinData.updateSkinData(skinId, sd);
-                msg(sender, "user.skin.pin_success");
-            }
+        }
+
+        if (textures == null || textures.getSignature() == null) {
+            msg(sender, "user.skin.pin_fail");
+        } else {
+            SkinData sd = new SkinData(skinId, playerName, textures, follow ? p.getUniqueId() : null);
+            plugin.cfg.skinData.updateSkinData(skinId, sd);
+            msg(sender, "user.skin.pin_success");
         }
     }
 

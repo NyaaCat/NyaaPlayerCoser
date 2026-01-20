@@ -8,7 +8,6 @@ import cat.nyaa.nyaacore.utils.VersionUtils;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.*;
-import net.minecraft.world.entity.projectile.EntityEgg;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -16,16 +15,18 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
-import java.lang.reflect.InvocationTargetException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class NPCPlayer extends NPCBase {
     private static final SecureRandom rnd = new SecureRandom();
+    // Use a high starting value to avoid conflicts with real entity IDs
+    private static final AtomicInteger ENTITY_ID_COUNTER = new AtomicInteger(Integer.MAX_VALUE / 2);
     public static final Map<Integer, NPCPlayer> spawnedDummyNPCs = new HashMap<>(); // map<entityId, NpcPlayer>
 
     public static UUID getVersion2UUID() {
@@ -135,14 +136,10 @@ public class NPCPlayer extends NPCBase {
                     @Override
                     public void run() { // when client about to spawn the player, it still need the gameprofile from the list. so we cannot remove it early.
                         pktList.getEnumModifier(EnumWrappers.PlayerInfoAction.class, 0).write(0, EnumWrappers.PlayerInfoAction.REMOVE_PLAYER);
-                        try {
-                            ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
-                        } catch (InvocationTargetException ex) {
-                            throw new RuntimeException(ex);
-                        }
+                        ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
                     }
                 }, NyaaPlayerCoser.instance.cfg.tabListDelay);
-            } catch (ReflectiveOperationException ex) {
+            } catch (Exception ex) {
                 p.sendMessage("npc spawn fail. please report the bug");
                 ex.printStackTrace();
             }
@@ -153,12 +150,8 @@ public class NPCPlayer extends NPCBase {
     public void onPlayerLeaveRange(Player p) {
         if (spawned && inRangePlayers.contains(p)) {
             inRangePlayers.remove(p);
-            try {
-                PacketContainer pktRemoveEntity = getRemoveEntityPacket(entityId);
-                ExternalPluginUtils.getPM().sendServerPacket(p, pktRemoveEntity);
-            } catch (InvocationTargetException ex) {
-                ex.printStackTrace();
-            }
+            PacketContainer pktRemoveEntity = getRemoveEntityPacket(entityId);
+            ExternalPluginUtils.getPM().sendServerPacket(p, pktRemoveEntity);
         }
     }
 
@@ -180,8 +173,6 @@ public class NPCPlayer extends NPCBase {
                     ExternalPluginUtils.getPM().sendServerPacket(p, pktRemoveEntity);
                 }
             }
-        } catch (ReflectiveOperationException ex) {
-            throw new RuntimeException(ex);
         } finally {
             spawnedDummyNPCs.remove(entityId);
             entityId = null;
@@ -192,8 +183,7 @@ public class NPCPlayer extends NPCBase {
     }
 
     private static int nextEntityId() {
-        EntityEgg eg = new EntityEgg(null, 0, 0, 0);
-        return eg.getId();
+        return ENTITY_ID_COUNTER.getAndIncrement();
     }
 
     @Override
@@ -215,13 +205,8 @@ public class NPCPlayer extends NPCBase {
         pktEntityHeadRotation.getBytes().write(0, this.yaw);
 
         for (Player p : inRangePlayers) {
-            try {
-                ExternalPluginUtils.getPM().sendServerPacket(p, pktEntityLook);
-                ExternalPluginUtils.getPM().sendServerPacket(p, pktEntityHeadRotation);
-            } catch (InvocationTargetException ex) {
-                p.sendMessage("NPC cannot update direction. Please report this bug.");
-                ex.printStackTrace();
-            }
+            ExternalPluginUtils.getPM().sendServerPacket(p, pktEntityLook);
+            ExternalPluginUtils.getPM().sendServerPacket(p, pktEntityHeadRotation);
         }
     }
     private PacketContainer getRemoveEntityPacket(int EntityId){

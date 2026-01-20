@@ -1,7 +1,7 @@
 package cat.nyaa.npc.persistence;
 
 import cat.nyaa.nyaacore.configuration.ISerializable;
-import com.mojang.authlib.properties.Property;
+import com.destroystokyo.paper.profile.ProfileProperty;
 
 import java.util.UUID;
 
@@ -22,7 +22,7 @@ public class SkinData implements ISerializable, Cloneable {
     public SkinData() {
     }
 
-    public SkinData(String key, String desc, Property texture, UUID follow) {
+    public SkinData(String key, String desc, ProfileProperty texture, UUID follow) {
         this(key, desc, texture.getValue(), texture.getSignature());
         this.followPlayer = follow;
     }

@@ -85,7 +85,7 @@ public class NPCLiving extends NPCBase {
         e.setSilent(true);
         e.setCanPickupItems(false);
         NmsUtils.setEntityOnGround(e, true);
-        e.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).addModifier(new AttributeModifier("immobile_entity", -1, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+        e.getAttribute(Attribute.MOVEMENT_SPEED).addModifier(new AttributeModifier(org.bukkit.NamespacedKey.fromString("npc:immobile_entity"), -1, AttributeModifier.Operation.ADD_SCALAR));
         spawnedEntity = e;
         NyaaPlayerCoser.debug(log -> log.info(String.format("NPCLiving::spawn() %s:%s %s", e, System.identityHashCode(e), data.displayName)));
     }

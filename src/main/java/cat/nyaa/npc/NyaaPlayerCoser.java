@@ -1,6 +1,6 @@
 package cat.nyaa.npc;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -31,7 +31,7 @@ public class NyaaPlayerCoser extends JavaPlugin {
         l.info("[NPC TRACE] THREAD = " + Thread.currentThread().getName());
         try {
             if (logWriter != null) logWriter.accept(l);
-            l.info("[NPC TRACE]" + ExceptionUtils.getFullStackTrace(new Throwable()));
+            l.info("[NPC TRACE]" + ExceptionUtils.getStackTrace(new Throwable()));
         } catch (Throwable ex) {
             l.severe("[NPC TRACE] Exception thrown from log writer");
             ex.printStackTrace();
