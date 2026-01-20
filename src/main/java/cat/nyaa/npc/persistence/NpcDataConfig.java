@@ -4,7 +4,9 @@ import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.nyaacore.configuration.FileConfigure;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -17,6 +19,27 @@ public class NpcDataConfig extends FileConfigure {
     @Override
     protected JavaPlugin getPlugin() {
         return plugin;
+    }
+
+    @Override
+    public void load() {
+        super.load();
+        // Filter out deprecated HEH_SELL_SHOP NPCs (player-created NPCs)
+        // HamsterEcoHelper integration is no longer supported
+        List<String> toRemove = new ArrayList<>();
+        for (Map.Entry<String, NpcData> entry : npcList.entrySet()) {
+            if (entry.getValue().npcType == NpcType.HEH_SELL_SHOP) {
+                toRemove.add(entry.getKey());
+                plugin.getLogger().info("Removing deprecated HEH_SELL_SHOP NPC: " + entry.getKey() + " (" + entry.getValue().displayName + ")");
+            }
+        }
+        if (!toRemove.isEmpty()) {
+            for (String id : toRemove) {
+                npcList.remove(id);
+            }
+            plugin.getLogger().info("Removed " + toRemove.size() + " deprecated player-created NPC(s). Saving config...");
+            save();
+        }
     }
 
     private final NyaaPlayerCoser plugin;

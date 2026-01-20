@@ -4,7 +4,9 @@ import cat.nyaa.npc.NyaaPlayerCoser;
 import cat.nyaa.nyaacore.configuration.FileConfigure;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SkinDataConfig extends FileConfigure {
@@ -29,6 +31,27 @@ public class SkinDataConfig extends FileConfigure {
     @Override
     protected JavaPlugin getPlugin() {
         return plugin;
+    }
+
+    @Override
+    public void load() {
+        super.load();
+        // Filter out deprecated hehshop skin data (from player-created NPCs)
+        // HamsterEcoHelper integration is no longer supported
+        List<String> toRemove = new ArrayList<>();
+        for (String key : skinDataMap.keySet()) {
+            if (key.startsWith("hehshop:")) {
+                toRemove.add(key);
+                plugin.getLogger().info("Removing deprecated hehshop skin data: " + key);
+            }
+        }
+        if (!toRemove.isEmpty()) {
+            for (String key : toRemove) {
+                skinDataMap.remove(key);
+            }
+            plugin.getLogger().info("Removed " + toRemove.size() + " deprecated skin data entries. Saving config...");
+            save();
+        }
     }
 
     private final NyaaPlayerCoser plugin;
