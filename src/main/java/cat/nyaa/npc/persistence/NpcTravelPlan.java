@@ -134,6 +134,7 @@ public class NpcTravelPlan implements ISerializable, Cloneable {
     }
 
     private void showDepartureEffect(World w, Vector locationVector) {
+        if (w == null) return;
         Location location = new Location(w, locationVector.getX(), locationVector.getY(), locationVector.getZ());
         if (w.isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) {
             w.spawnParticle(Particle.PORTAL, location, 300);
@@ -142,6 +143,7 @@ public class NpcTravelPlan implements ISerializable, Cloneable {
     }
 
     private void showArriveEffect(World w, Vector locationVector) {
+        if (w == null) return;
         Location location = new Location(w, locationVector.getX(), locationVector.getY(), locationVector.getZ());
         if (w.isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) {
             w.spawnParticle(Particle.CLOUD, location, 300, 0, 0, 0, 0.1);
@@ -164,6 +166,7 @@ public class NpcTravelPlan implements ISerializable, Cloneable {
     }
 
     private void broadcast(World w, String message, Vector location, double broadcastRange) {
+        if (w == null) return;
         Message msg = new Message(HexColorUtils.hexColored(message));
         w.getPlayers().stream()
                 .filter(player -> player.getLocation().toVector().distance(location) < broadcastRange)
