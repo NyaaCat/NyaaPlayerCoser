@@ -31,11 +31,25 @@ repositories {
     mavenCentral()
     maven { name 'Paper'; url 'https://repo.papermc.io/repository/maven-public/' }
     maven { name 'NyaaCat'; url 'https://ci.nyaacat.com/maven/' }
-    maven { name 'JitPack'; url 'https://jitpack.io' } // ProtocolLib (master)
     maven { name 'aikar'; url 'https://repo.aikar.co/content/groups/aikar/' }
 }
 
+// Download ProtocolLib dev-build from GitHub releases (for 1.21.11 support)
+def protocolLibFile = file("$projectDir/libs/ProtocolLib.jar")
+def protocolLibUrl = 'https://github.com/dmulloy2/ProtocolLib/releases/download/dev-build/ProtocolLib.jar'
+
+tasks.register('downloadProtocolLib') {
+    outputs.file(protocolLibFile)
+    doLast {
+        if (!protocolLibFile.exists()) {
+            mkdir protocolLibFile.parentFile
+            ant.get(src: protocolLibUrl, dest: protocolLibFile)
+        }
+    }
+}
+
 tasks.withType(JavaCompile) {
+    dependsOn downloadProtocolLib
     options.encoding = "UTF-8"
 }
 
@@ -45,8 +59,8 @@ dependencies {
     // other nyaa plugins
     compileOnly('cat.nyaa:nyaacore:9.10') { transitive = false }
 
-    // 3rd party plugins
-    compileOnly('com.github.dmulloy2:ProtocolLib:master-SNAPSHOT') { transitive = false }
+    // 3rd party plugins - dev-build from GitHub for 1.21.11 support
+    compileOnly files('libs/ProtocolLib.jar')
 }
 
 // source file modification (modify version string)
