@@ -51,6 +51,10 @@ public class NyaaMerchant implements Merchant {
         return data;
     }
 
+    public Merchant getDelegate() {
+        return delegate;
+    }
+
     public void registerLookup(InventoryView inv) {
         if (openedInventoryView != null) throw new IllegalArgumentException("inv view double set.");
         if (!(inv.getTopInventory() instanceof MerchantInventory))

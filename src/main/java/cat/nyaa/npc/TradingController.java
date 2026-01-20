@@ -154,7 +154,7 @@ public class TradingController implements Listener {
                     p.sendMessage(I18n.format("user.interact.not_ready"));
                 } else {
                     NyaaMerchant ephemeralMerchant = new NyaaMerchant(npcId, data);
-                    InventoryView vi = p.openMerchant(ephemeralMerchant, false);
+                    InventoryView vi = p.openMerchant(ephemeralMerchant.getDelegate(), false);
                     if (vi == null) {
                         p.sendMessage(I18n.format("user.interact.open_merchant_fail"));
                     } else {

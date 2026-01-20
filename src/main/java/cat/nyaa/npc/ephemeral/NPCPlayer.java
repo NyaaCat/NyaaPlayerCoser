@@ -109,10 +109,7 @@ public class NPCPlayer extends NPCBase {
             inRangePlayers.add(p);
             try {
                 PlayerInfoData playerInfoData = new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.CREATIVE, WrappedChatComponent.fromText(data.displayName));
-                PacketContainer pktList = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
-                pktList.getEnumModifier(EnumWrappers.PlayerInfoAction.class, 0).write(0, EnumWrappers.PlayerInfoAction.ADD_PLAYER);
-                List<PlayerInfoData> l = Stream.of(playerInfoData).collect(Collectors.toList());
-                pktList.getPlayerInfoDataLists().write(0, l);
+                PacketContainer pktList = buildPlayerInfoPacket(EnumWrappers.PlayerInfoAction.ADD_PLAYER, playerInfoData);
                 ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
 
                 PacketContainer pktSpawn = new PacketContainer(PacketType.Play.Server.NAMED_ENTITY_SPAWN);
@@ -135,8 +132,8 @@ public class NPCPlayer extends NPCBase {
                 Bukkit.getScheduler().runTaskLater(NyaaPlayerCoser.instance, new Runnable() {
                     @Override
                     public void run() { // when client about to spawn the player, it still need the gameprofile from the list. so we cannot remove it early.
-                        pktList.getEnumModifier(EnumWrappers.PlayerInfoAction.class, 0).write(0, EnumWrappers.PlayerInfoAction.REMOVE_PLAYER);
-                        ExternalPluginUtils.getPM().sendServerPacket(p, pktList);
+                        PacketContainer pktRemove = buildPlayerInfoRemovePacket(playerInfoData.getProfile().getUUID(), playerInfoData);
+                        ExternalPluginUtils.getPM().sendServerPacket(p, pktRemove);
                     }
                 }, NyaaPlayerCoser.instance.cfg.tabListDelay);
             } catch (Exception ex) {
@@ -184,6 +181,26 @@ public class NPCPlayer extends NPCBase {
 
     private static int nextEntityId() {
         return ENTITY_ID_COUNTER.getAndIncrement();
+    }
+
+    private static PacketContainer buildPlayerInfoPacket(EnumWrappers.PlayerInfoAction action, PlayerInfoData playerInfoData) {
+        PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
+        if (packet.getPlayerInfoActions().size() > 0) {
+            packet.getPlayerInfoActions().write(0, EnumSet.of(action));
+        } else {
+            packet.getPlayerInfoAction().write(0, action);
+        }
+        packet.getPlayerInfoDataLists().write(0, Collections.singletonList(playerInfoData));
+        return packet;
+    }
+
+    private static PacketContainer buildPlayerInfoRemovePacket(UUID uuid, PlayerInfoData playerInfoData) {
+        if (PacketType.Play.Server.PLAYER_INFO_REMOVE.isSupported()) {
+            PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO_REMOVE);
+            packet.getUUIDLists().write(0, Collections.singletonList(uuid));
+            return packet;
+        }
+        return buildPlayerInfoPacket(EnumWrappers.PlayerInfoAction.REMOVE_PLAYER, playerInfoData);
     }
 
     @Override
