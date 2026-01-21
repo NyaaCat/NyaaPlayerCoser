@@ -71,12 +71,12 @@ public class TradeData implements ISerializable {
      */
     public int allowedTradeCount(ItemStack slot1, ItemStack slot2) {
         if (slot1 == null || slot1.getType() == AIR) return -1;
-        if (!slot1.isSimilar(item1)) return -1;
+        if (!ItemStackUtils.isSimilarPlainText(item1, slot1)) return -1;
         int c1 = slot1.getAmount() / item1.getAmount();
 
         if (item2 != null && item2.getType() != AIR) {
             if (slot2 == null || slot2.getType() == AIR) return -1;
-            if (!slot2.isSimilar(item2)) return -1;
+            if (!ItemStackUtils.isSimilarPlainText(item2, slot2)) return -1;
             int c2 = slot2.getAmount() / item2.getAmount();
             return c1 < c2 ? c1 : c2;
         } else {

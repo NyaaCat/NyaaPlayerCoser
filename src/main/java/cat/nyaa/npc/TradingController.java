@@ -281,21 +281,29 @@ public class TradingController implements Listener {
 
                 try {
                     MerchantRecipe recipe = m.getRecipe(mInv.getSelectedRecipeIndex());
-                    if (recipe instanceof NyaaMerchantRecipe) {
-                        NyaaMerchantRecipe nyaaRecipe = (NyaaMerchantRecipe) recipe;
-                        TradeData d = nyaaRecipe.getTradeData();
-
-                        // FIXME debug only
-                        if (ev.getWhoClicked().isOp() && NyaaPlayerCoser.debugEnabled) {
-                            ev.getWhoClicked().sendMessage("selected recipe: " + d.toString());
-                        }
-
-                        if (d.allowedTradeCount(mInv.getItem(0), mInv.getItem(1)) <= 0) {
-                            ev.setResult(DENY); // mismatch item, deny exchange
-                        }
+                    TradeData d = null;
+                    if (recipe instanceof NyaaMerchantRecipe nyaaRecipe) {
+                        d = nyaaRecipe.getTradeData();
                     } else {
-                        ev.setResult(DENY);
-                        plugin.getLogger().warning(String.format("NyaaNPC (%s) with non-NPC recipe: %s", m.getNpcId(), recipe));
+                        List<String> tradeIds = data.trades;
+                        int index = mInv.getSelectedRecipeIndex();
+                        if (index >= 0 && index < tradeIds.size()) {
+                            d = plugin.cfg.tradeData.tradeList.get(tradeIds.get(index));
+                        }
+                        if (d == null) {
+                            ev.setResult(DENY);
+                            plugin.getLogger().warning(String.format("NyaaNPC (%s) with non-NPC recipe: %s", m.getNpcId(), recipe));
+                            return;
+                        }
+                    }
+
+                    // FIXME debug only
+                    if (ev.getWhoClicked().isOp() && NyaaPlayerCoser.debugEnabled) {
+                        ev.getWhoClicked().sendMessage("selected recipe: " + d.toString());
+                    }
+
+                    if (d.allowedTradeCount(mInv.getItem(0), mInv.getItem(1)) <= 0) {
+                        ev.setResult(DENY); // mismatch item, deny exchange
                     }
                 } catch (NullPointerException ex) {
                     plugin.getLogger().log(Level.WARNING, "Error trade with npc: " + m.getNpcId(), ex);
