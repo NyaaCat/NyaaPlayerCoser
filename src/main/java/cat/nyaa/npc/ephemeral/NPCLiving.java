@@ -76,6 +76,7 @@ public class NPCLiving extends NPCBase {
 
         // post spawn customization
         e.addScoreboardTag(SCOREBOARD_TAG_PREFIX + id);
+        e.addScoreboardTag("rpgitem_ignore");
         e.setCustomName(data.displayName);
         e.setCustomNameVisible(true);
         e.setAI(false);
