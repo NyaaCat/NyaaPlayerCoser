@@ -100,8 +100,6 @@ public class NPCPlayer extends NPCBase {
             Integer skinPartsIndex = PLAYER_SKIN_PARTS_INDEX;
             if (skinPartsIndex != null) {
                 dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(skinPartsIndex, WrappedDataWatcher.Registry.get(Byte.class)), (byte) skin.displayMask, true);
-            } else {
-                dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(17, WrappedDataWatcher.Registry.get(Byte.class)), (byte) skin.displayMask, true);
             }
         } else if (VersionUtils.isVersionGreaterOrEq(VersionUtils.getCurrentVersion(), "1.16")) {
             dataWatcher.setObject(new WrappedDataWatcher.WrappedDataWatcherObject(16, WrappedDataWatcher.Registry.get(Byte.class)), (byte) skin.displayMask, true);
@@ -323,8 +321,7 @@ public class NPCPlayer extends NPCBase {
     private static PacketType resolvePlayerSpawnPacketType() {
         List<String> candidates = Arrays.asList(
                 "PLAYER_SPAWN",
-                "SPAWN_PLAYER",
-                "NAMED_ENTITY_SPAWN"
+                "SPAWN_PLAYER"
         );
         for (String fieldName : candidates) {
             try {
@@ -373,21 +370,31 @@ public class NPCPlayer extends NPCBase {
             // fall back to legacy watchable objects
         }
         try {
-            packet.getWatchableCollectionModifier().write(0, watcher.getWatchableObjects());
+            if (!VersionUtils.isVersionGreaterOrEq(VersionUtils.getCurrentVersion(), "1.19")) {
+                packet.getWatchableCollectionModifier().write(0, watcher.getWatchableObjects());
+            }
         } catch (Exception ignored) {
             // ignore if structure differs
         }
     }
 
     private static Integer resolvePlayerSkinPartsIndex() {
+        List<Class<?>> candidates = new ArrayList<>();
         try {
-            Class<?> avatarClass = Class.forName("net.minecraft.world.entity.Avatar");
-            Integer result = readDataAccessorId(avatarClass, "DATA_PLAYER_MODE_CUSTOMISATION", "DATA_PLAYER_MODE_CUSTOMIZATION");
+            candidates.add(Class.forName("net.minecraft.world.entity.player.Player"));
+        } catch (ClassNotFoundException ignored) {
+            // ignore
+        }
+        try {
+            candidates.add(Class.forName("net.minecraft.world.entity.Avatar"));
+        } catch (ClassNotFoundException ignored) {
+            // ignore
+        }
+        for (Class<?> candidate : candidates) {
+            Integer result = readDataAccessorId(candidate, "DATA_PLAYER_MODE_CUSTOMISATION", "DATA_PLAYER_MODE_CUSTOMIZATION");
             if (result != null) {
                 return result;
             }
-        } catch (ClassNotFoundException ignored) {
-            // fall back to version-based indices
         }
         return null;
     }

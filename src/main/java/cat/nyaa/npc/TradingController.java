@@ -10,6 +10,7 @@ import cat.nyaa.npc.events.TradeRedefinedEvent;
 import cat.nyaa.npc.persistence.NpcData;
 import cat.nyaa.npc.persistence.TradeData;
 import cat.nyaa.npc.utils.RunCommandUtils;
+import cat.nyaa.nyaacore.utils.ItemStackUtils;
 import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
@@ -18,6 +19,7 @@ import com.comphenix.protocol.wrappers.EnumWrappers.EntityUseAction;
 import com.comphenix.protocol.wrappers.EnumWrappers.Hand;
 import com.comphenix.protocol.wrappers.WrappedEnumEntityUseAction;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -285,11 +287,7 @@ public class TradingController implements Listener {
                     if (recipe instanceof NyaaMerchantRecipe nyaaRecipe) {
                         d = nyaaRecipe.getTradeData();
                     } else {
-                        List<String> tradeIds = data.trades;
-                        int index = mInv.getSelectedRecipeIndex();
-                        if (index >= 0 && index < tradeIds.size()) {
-                            d = plugin.cfg.tradeData.tradeList.get(tradeIds.get(index));
-                        }
+                        d = resolveTradeData(m, data, recipe, mInv.getSelectedRecipeIndex());
                         if (d == null) {
                             ev.setResult(DENY);
                             plugin.getLogger().warning(String.format("NyaaNPC (%s) with non-NPC recipe: %s", m.getNpcId(), recipe));
@@ -315,6 +313,45 @@ public class TradingController implements Listener {
             return;
             // TODO: chest inventory
         }
+    }
+
+    private TradeData resolveTradeData(NyaaMerchant merchant, NpcData data, MerchantRecipe recipe, int index) {
+        List<String> tradeIds = data.trades;
+        if (index >= 0 && index < tradeIds.size()) {
+            TradeData direct = plugin.cfg.tradeData.tradeList.get(tradeIds.get(index));
+            if (direct != null) {
+                return direct;
+            }
+        }
+        if (recipe == null) {
+            return null;
+        }
+        List<ItemStack> ingredients = recipe.getIngredients();
+        ItemStack recipeFirst = ingredients.size() > 0 ? ingredients.get(0) : null;
+        ItemStack recipeSecond = ingredients.size() > 1 ? ingredients.get(1) : null;
+        ItemStack result = recipe.getResult();
+        for (String tradeId : tradeIds) {
+            TradeData candidate = plugin.cfg.tradeData.tradeList.get(tradeId);
+            if (candidate == null) {
+                continue;
+            }
+            if (itemsMatch(candidate.item1, recipeFirst)
+                    && itemsMatch(candidate.item2, recipeSecond)
+                    && itemsMatch(candidate.result, result)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private boolean itemsMatch(ItemStack expected, ItemStack actual) {
+        if (expected == null || expected.getType() == Material.AIR) {
+            return actual == null || actual.getType() == Material.AIR;
+        }
+        if (actual == null || actual.getType() == Material.AIR) {
+            return false;
+        }
+        return ItemStackUtils.isSimilarPlainText(expected, actual);
     }
 
     /**
