@@ -33,6 +33,11 @@ import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -45,6 +50,8 @@ import static org.bukkit.event.inventory.InventoryType.CREATIVE;
 
 public class TradingController implements Listener {
 
+    private static final String ITEM_FIX_LOG = "item-update.log";
+    private static final DateTimeFormatter LOG_TIME_FORMAT = DateTimeFormatter.ISO_INSTANT;
     private final NyaaPlayerCoser plugin;
 
     /**
@@ -131,6 +138,7 @@ public class TradingController implements Listener {
             plugin.getLogger().warning(String.format("Cannot activate npc %s for player %s : Cannot find NPC definition", npcId, p.getName()));
             return;
         }
+        scheduleTradeItemFix(npcId, p, data);
         // debug
 //        {
 //            if (data.travelPlan != null && data.travelPlan.isTraveller) {
@@ -352,6 +360,213 @@ public class TradingController implements Listener {
             return false;
         }
         return ItemStackUtils.isSimilarPlainText(expected, actual);
+    }
+
+    private void scheduleTradeItemFix(String npcId, Player player, NpcData data) {
+        if (data.trades == null || data.trades.isEmpty()) {
+            return;
+        }
+        Map<ItemKey, BaselineItem> baselines = new HashMap<>();
+        Set<ItemKey> ambiguous = new HashSet<>();
+        for (String tradeId : data.trades) {
+            TradeData trade = plugin.cfg.tradeData.tradeList.get(tradeId);
+            if (trade == null) {
+                continue;
+            }
+            addBaselineItem(baselines, ambiguous, trade.item1);
+            addBaselineItem(baselines, ambiguous, trade.item2);
+            addBaselineItem(baselines, ambiguous, trade.result);
+        }
+        if (baselines.isEmpty()) {
+            return;
+        }
+        for (ItemKey key : ambiguous) {
+            baselines.remove(key);
+        }
+        if (baselines.isEmpty()) {
+            return;
+        }
+        List<SlotSnapshot> snapshot = snapshotInventory(player);
+        if (snapshot.isEmpty()) {
+            return;
+        }
+        UUID playerId = player.getUniqueId();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            List<UpdatePlan> plans = new ArrayList<>();
+            for (SlotSnapshot slot : snapshot) {
+                BaselineItem baseline = baselines.get(slot.key);
+                if (baseline == null) {
+                    continue;
+                }
+                if (Arrays.equals(slot.fingerprint, baseline.fingerprint)) {
+                    continue;
+                }
+                plans.add(new UpdatePlan(slot.slot, slot.key, baseline.item, baseline.fingerprint));
+            }
+            if (plans.isEmpty()) {
+                return;
+            }
+            Bukkit.getScheduler().runTask(plugin, () -> applyTradeItemFix(playerId, npcId, plans));
+        });
+    }
+
+    private void addBaselineItem(Map<ItemKey, BaselineItem> baselines, Set<ItemKey> ambiguous, ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) {
+            return;
+        }
+        ItemKey key = ItemKey.from(item);
+        byte[] fingerprint = itemFingerprint(item);
+        BaselineItem existing = baselines.get(key);
+        if (existing == null) {
+            ItemStack normalized = item.clone();
+            normalized.setAmount(1);
+            baselines.put(key, new BaselineItem(key, normalized, fingerprint));
+            return;
+        }
+        if (!Arrays.equals(existing.fingerprint, fingerprint)) {
+            ambiguous.add(key);
+        }
+    }
+
+    private List<SlotSnapshot> snapshotInventory(Player player) {
+        List<SlotSnapshot> snapshot = new ArrayList<>();
+        PlayerInventory inventory = player.getInventory();
+        int size = inventory.getSize();
+        // Snapshot on main thread, match on async thread to avoid Bukkit API off-thread access.
+        for (int slot = 0; slot < size; slot++) {
+            ItemStack item = inventory.getItem(slot);
+            if (item == null || item.getType() == Material.AIR) {
+                continue;
+            }
+            ItemKey key = ItemKey.from(item);
+            snapshot.add(new SlotSnapshot(slot, key, itemFingerprint(item)));
+        }
+        return snapshot;
+    }
+
+    private void applyTradeItemFix(UUID playerId, String npcId, List<UpdatePlan> plans) {
+        Player player = Bukkit.getPlayer(playerId);
+        if (player == null) {
+            return;
+        }
+        PlayerInventory inventory = player.getInventory();
+        List<Integer> updatedSlots = new ArrayList<>();
+        for (UpdatePlan plan : plans) {
+            ItemStack current = inventory.getItem(plan.slot);
+            if (current == null || current.getType() == Material.AIR) {
+                continue;
+            }
+            if (!plan.key.equals(ItemKey.from(current))) {
+                continue;
+            }
+            if (Arrays.equals(itemFingerprint(current), plan.fingerprint)) {
+                continue;
+            }
+            ItemStack updated = plan.item.clone();
+            updated.setAmount(current.getAmount());
+            inventory.setItem(plan.slot, updated);
+            updatedSlots.add(plan.slot);
+        }
+        if (!updatedSlots.isEmpty()) {
+            String line = String.format(
+                    "%s player=%s(%s) npc=%s updated=%d slots=%s%n",
+                    LOG_TIME_FORMAT.format(Instant.now()),
+                    player.getName(),
+                    player.getUniqueId(),
+                    npcId,
+                    updatedSlots.size(),
+                    updatedSlots
+            );
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> appendUpdateLog(line));
+        }
+    }
+
+    private byte[] itemFingerprint(ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) {
+            return new byte[0];
+        }
+        ItemStack normalized = item.clone();
+        normalized.setAmount(1);
+        return ItemStackUtils.itemToBinary(normalized);
+    }
+
+    private void appendUpdateLog(String line) {
+        Path logPath = plugin.getDataFolder().toPath().resolve(ITEM_FIX_LOG);
+        try {
+            Files.createDirectories(logPath.getParent());
+            Files.writeString(logPath, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (Exception ex) {
+            plugin.getLogger().log(Level.WARNING, "Failed to write item update log", ex);
+        }
+    }
+
+    private static final class ItemKey {
+        private final Material type;
+        private final String name;
+        private final List<String> lore;
+
+        private ItemKey(Material type, String name, List<String> lore) {
+            this.type = type;
+            this.name = name == null ? "" : name;
+            this.lore = List.copyOf(lore == null ? Collections.emptyList() : lore);
+        }
+
+        private static ItemKey from(ItemStack item) {
+            return new ItemKey(item.getType(), ItemStackUtils.getPlainDisplayName(item), ItemStackUtils.getPlainLore(item));
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ItemKey itemKey = (ItemKey) o;
+            return type == itemKey.type
+                    && Objects.equals(name, itemKey.name)
+                    && Objects.equals(lore, itemKey.lore);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(type, name, lore);
+        }
+    }
+
+    private static final class BaselineItem {
+        private final ItemKey key;
+        private final ItemStack item;
+        private final byte[] fingerprint;
+
+        private BaselineItem(ItemKey key, ItemStack item, byte[] fingerprint) {
+            this.key = key;
+            this.item = item;
+            this.fingerprint = fingerprint;
+        }
+    }
+
+    private static final class SlotSnapshot {
+        private final int slot;
+        private final ItemKey key;
+        private final byte[] fingerprint;
+
+        private SlotSnapshot(int slot, ItemKey key, byte[] fingerprint) {
+            this.slot = slot;
+            this.key = key;
+            this.fingerprint = fingerprint;
+        }
+    }
+
+    private static final class UpdatePlan {
+        private final int slot;
+        private final ItemKey key;
+        private final ItemStack item;
+        private final byte[] fingerprint;
+
+        private UpdatePlan(int slot, ItemKey key, ItemStack item, byte[] fingerprint) {
+            this.slot = slot;
+            this.key = key;
+            this.item = item;
+            this.fingerprint = fingerprint;
+        }
     }
 
     /**
