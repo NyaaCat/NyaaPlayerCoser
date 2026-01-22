@@ -20,6 +20,9 @@ import com.comphenix.protocol.wrappers.EnumWrappers.Hand;
 import com.comphenix.protocol.wrappers.WrappedEnumEntityUseAction;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Tag;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Container;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -32,6 +35,9 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
+import org.bukkit.inventory.meta.BlockStateMeta;
+import org.bukkit.inventory.meta.BundleMeta;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -375,7 +381,6 @@ public class TradingController implements Listener {
             }
             addBaselineItem(baselines, ambiguous, trade.item1);
             addBaselineItem(baselines, ambiguous, trade.item2);
-            addBaselineItem(baselines, ambiguous, trade.result);
         }
         if (baselines.isEmpty()) {
             return;
@@ -412,6 +417,9 @@ public class TradingController implements Listener {
 
     private void addBaselineItem(Map<ItemKey, BaselineItem> baselines, Set<ItemKey> ambiguous, ItemStack item) {
         if (item == null || item.getType() == Material.AIR) {
+            return;
+        }
+        if (isContainerLikeItem(item)) {
             return;
         }
         ItemKey key = ItemKey.from(item);
@@ -456,6 +464,9 @@ public class TradingController implements Listener {
             if (current == null || current.getType() == Material.AIR) {
                 continue;
             }
+            if (isContainerLikeItem(current)) {
+                continue;
+            }
             if (!plan.key.equals(ItemKey.from(current))) {
                 continue;
             }
@@ -488,6 +499,24 @@ public class TradingController implements Listener {
         ItemStack normalized = item.clone();
         normalized.setAmount(1);
         return ItemStackUtils.itemToBinary(normalized);
+    }
+
+    private boolean isContainerLikeItem(ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) {
+            return false;
+        }
+        if (Tag.SHULKER_BOXES.isTagged(item.getType())) {
+            return true;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta instanceof BundleMeta) {
+            return true;
+        }
+        if (meta instanceof BlockStateMeta blockStateMeta) {
+            BlockState state = blockStateMeta.getBlockState();
+            return state instanceof Container;
+        }
+        return false;
     }
 
     private void appendUpdateLog(String line) {
